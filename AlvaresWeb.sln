@@ -1,12 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.API", "AlvaresWeb.API\AlvaresWeb.API.csproj", "{96E179A0-1B17-4B4D-90E0-0351A7293B1A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.API", "backend/src/AlvaresWeb.API\AlvaresWeb.API.csproj", "{96E179A0-1B17-4B4D-90E0-0351A7293B1A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.Application", "AlvaresWeb.Application\AlvaresWeb.Application.csproj", "{B28319F7-7BF2-444C-878E-E31FE87F1297}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.Application", "backend/src/AlvaresWeb.Application\AlvaresWeb.Application.csproj", "{B28319F7-7BF2-444C-878E-E31FE87F1297}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.Core", "AlvaresWeb.Core\AlvaresWeb.Core.csproj", "{546B64B5-131D-4EDA-84E4-A1763E6FF7A3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.Core", "backend/src/AlvaresWeb.Core\AlvaresWeb.Core.csproj", "{546B64B5-131D-4EDA-84E4-A1763E6FF7A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.Infrastructure", "AlvaresWeb.Infrastructure\AlvaresWeb.Infrastructure.csproj", "{EC20E418-C14D-4266-8540-D7F686DDE36F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlvaresWeb.Infrastructure", "backend/src/AlvaresWeb.Infrastructure\AlvaresWeb.Infrastructure.csproj", "{EC20E418-C14D-4266-8540-D7F686DDE36F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
