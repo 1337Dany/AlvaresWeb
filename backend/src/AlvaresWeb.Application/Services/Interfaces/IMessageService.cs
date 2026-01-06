@@ -1,6 +1,6 @@
 ﻿namespace AlvaresWeb.Application.Services.Interfaces;
 
-public class IMessageService
+public interface IMessageService
 {
     
 }
