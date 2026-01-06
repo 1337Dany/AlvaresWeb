@@ -16,4 +16,8 @@
       <Folder Include="Controllers\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\AlvaresWeb.Infrastructure\AlvaresWeb.Infrastructure.csproj" />
+    </ItemGroup>
+
 </Project>

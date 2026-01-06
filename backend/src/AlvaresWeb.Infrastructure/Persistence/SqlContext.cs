@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using AlvaresWeb.Core.Models;
 
-namespace AlvaresWeb.Infrastructure;
+namespace AlvaresWeb.Infrastructure.Persistence;
 
-public partial class AlvaresContext(IConfiguration configuration, DbContextOptions<AlvaresContext> options)
+public partial class SqlContext(IConfiguration configuration, DbContextOptions<SqlContext> options)
     : DbContext(options)
 {
     private readonly string _connectionString = configuration.GetConnectionString("DefaultConnection") 
@@ -23,7 +23,6 @@ public partial class AlvaresContext(IConfiguration configuration, DbContextOptio
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Конфигурация Пользователя
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("user_pk");
@@ -37,7 +36,6 @@ public partial class AlvaresContext(IConfiguration configuration, DbContextOptio
             entity.Property(e => e.RegisteredAt).HasDefaultValueSql("NOW()");
         });
 
-        // Конфигурация Чата
         modelBuilder.Entity<Chat>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("chat_pk");
@@ -47,7 +45,6 @@ public partial class AlvaresContext(IConfiguration configuration, DbContextOptio
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
         });
 
-        // Конфигурация Many-to-Many (UserChat)
         modelBuilder.Entity<UserChat>(entity =>
         {
             entity.HasKey(e => new { e.UserId, e.ChatId }).HasName("user_chat_pk");
@@ -64,7 +61,6 @@ public partial class AlvaresContext(IConfiguration configuration, DbContextOptio
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Конфигурация Сессий (Cookies)
         modelBuilder.Entity<UserSession>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("session_pk");
