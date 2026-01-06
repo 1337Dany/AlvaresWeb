@@ -1,7 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using AlvaresWeb.Application.DTOs;
-using AlvaresWeb.Application.Services.Interfaces;
 
 namespace AlvaresWeb.Application.Services;
 
@@ -9,7 +8,7 @@ public static class TelegramHashValidator
 {
     public static bool IsValid(TelegramAuthDto dto)
     {
-        var botToken = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN");
+        var botToken = Environment.GetEnvironmentVariable("BotToken");
 
         if (string.IsNullOrEmpty(botToken))
             throw new Exception("TELEGRAM_BOT_TOKEN is not set");
