@@ -1,0 +1,6 @@
+@AlvarewWeb.API_HostAddress = http://localhost:5075
+
+GET {{AlvarewWeb.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
