@@ -11,7 +11,5 @@ public static class ApplicationServicesExtension
         app.AddScoped<IUserService, UserService>();
         app.AddScoped<IChatService, ChatService>();
         app.AddScoped<IMessageService, MessageService>();
-        
-        
     }
 }

@@ -24,7 +24,7 @@ public static class InfrastructureServicesExtension
                 options.LoginPath = "/auth/login";
             });
         
-        app.AddSingleton<AlvaresMongoContext>();
+        app.AddSingleton<NoSqlDriver>();
         
         app.AddScoped(sp => 
         {

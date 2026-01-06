@@ -13,11 +13,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Controllers\" />
+      <ProjectReference Include="..\AlvaresWeb.Infrastructure\AlvaresWeb.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AlvaresWeb.Infrastructure\AlvaresWeb.Infrastructure.csproj" />
+      <Folder Include="Controllers\" />
     </ItemGroup>
 
 </Project>

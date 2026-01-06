@@ -1,6 +1,8 @@
-﻿namespace AlvaresWeb.Application.Repositories;
+﻿using AlvaresWeb.Core.Models;
 
-public class IChatRepository
+namespace AlvaresWeb.Application.Repositories;
+
+public interface IChatRepository
 {
-    
+    Task AddMessageToHistoryAsync(MongoMessage message);
 }

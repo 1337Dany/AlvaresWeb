@@ -4,11 +4,11 @@ using MongoDB.Driver;
 
 namespace AlvaresWeb.Infrastructure.Persistence;
 
-public class AlvaresMongoContext
+public class NoSqlDriver
 {
     private readonly IMongoDatabase _database;
 
-    public AlvaresMongoContext(IConfiguration configuration)
+    public NoSqlDriver(IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("MongoConnection");
         var client = new MongoClient(connectionString);

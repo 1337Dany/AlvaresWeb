@@ -1,6 +1,6 @@
 ﻿namespace AlvaresWeb.Application.Repositories;
 
-public class IUserRepository
+public interface IUserRepository
 {
-    
+    Task<int> GetCountAsync();
 }
