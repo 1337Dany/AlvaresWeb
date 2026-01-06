@@ -556,6 +556,8 @@ dlldata.c
 BenchmarkDotNet.Artifacts/
 
 # .NET Core
+appsettings.json
+appsettings.Development.json
 project.lock.json
 project.fragment.lock.json
 artifacts/
@@ -856,3 +858,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
