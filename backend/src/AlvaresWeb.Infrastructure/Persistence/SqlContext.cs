@@ -33,6 +33,7 @@ public partial class SqlContext(IConfiguration configuration, DbContextOptions<S
             entity.Property(e => e.TelegramId).IsRequired();
             entity.Property(e => e.FirstName).HasMaxLength(255).IsRequired();
             entity.Property(e => e.Username).HasMaxLength(255);
+            entity.Property(u => u.Role).HasConversion<string>();
             entity.Property(e => e.RegisteredAt).HasDefaultValueSql("NOW()");
         });
 
