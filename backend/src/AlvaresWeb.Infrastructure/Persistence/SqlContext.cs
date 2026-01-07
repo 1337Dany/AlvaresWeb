@@ -22,7 +22,6 @@ public partial class SqlContext(IConfiguration configuration, DbContextOptions<S
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // --- ТАБЛИЦА USERS ---
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
@@ -40,7 +39,6 @@ public partial class SqlContext(IConfiguration configuration, DbContextOptions<S
             entity.HasIndex(e => e.TelegramId).IsUnique();
         });
 
-        // --- ТАБЛИЦА CHATS ---
         modelBuilder.Entity<Chat>(entity =>
         {
             entity.ToTable("chats");
@@ -54,7 +52,6 @@ public partial class SqlContext(IConfiguration configuration, DbContextOptions<S
             entity.HasIndex(e => e.TelegramChatId).IsUnique();
         });
 
-        // --- ТАБЛИЦА USER_CHATS ---
         modelBuilder.Entity<UserChat>(entity =>
         {
             entity.ToTable("user_chats");
@@ -74,7 +71,6 @@ public partial class SqlContext(IConfiguration configuration, DbContextOptions<S
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // --- ТАБЛИЦА USER_SESSIONS ---
         modelBuilder.Entity<UserSession>(entity =>
         {
             entity.ToTable("user_sessions");

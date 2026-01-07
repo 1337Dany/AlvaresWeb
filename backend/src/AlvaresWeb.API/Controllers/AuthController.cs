@@ -33,9 +33,9 @@ public class AuthController : ControllerBase
         {
             Id = Guid.NewGuid(),
             Username = dto.Username,
-            FirstName = dto.Username, // По умолчанию ставим логин
+            FirstName = dto.Username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Role = UserRole.User, // Level 3: начальная роль
+            Role = UserRole.User,
             RegisteredAt = DateTime.UtcNow
         };
 
@@ -54,7 +54,6 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid username or password" });
         }
 
-        // Генерируем JWT токен (Level 2/3)
         var token = GenerateJwtToken(user);
 
         return Ok(new { 
@@ -73,7 +72,6 @@ public class AuthController : ControllerBase
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
-        // Секретный ключ берем из конфига (appsettings.json)
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? "super_secret_key_1234567890_alvares"));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

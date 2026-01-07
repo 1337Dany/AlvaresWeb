@@ -77,7 +77,6 @@
     const API_URL = "http://localhost:5000";
     let jwtToken = "";
 
-    // Функция валидации (Client-side validation)
     function validateForm() {
         const u = document.getElementById('username');
         const p = document.getElementById('password');
@@ -87,7 +86,6 @@
 
         let isValid = true;
 
-        // Проверка логина
         if (u.value.length > 0 && (u.value.length < 3 || !/^[a-zA-Z0-9_]+$/.test(u.value))) {
             uErr.innerText = "Минимум 3 символа (лат. буквы и цифры)";
             u.classList.add('invalid');
@@ -97,7 +95,6 @@
             u.classList.remove('invalid');
         }
 
-        // Проверка пароля
         if (p.value.length > 0 && p.value.length < 6) {
             pErr.innerText = "Пароль должен быть не менее 6 символов";
             p.classList.add('invalid');
@@ -107,7 +104,6 @@
             p.classList.remove('invalid');
         }
 
-        // Блокируем кнопку, если пустые поля или ошибки
         btn.disabled = !isValid || u.value === "" || p.value === "";
         return isValid;
     }
@@ -116,7 +112,7 @@
         isReg = !isReg;
         document.getElementById('title').innerText = isReg ? "Регистрация" : "Вход";
         document.getElementById('toggleMode').innerText = isReg ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Регистрация";
-        validateForm(); // Обновить состояние кнопки
+        validateForm();
     }
 
     function logout() {
@@ -205,7 +201,6 @@
         }
     }
 
-    // Инициализация кнопки при загрузке
     validateForm();
 </script>
 </body>

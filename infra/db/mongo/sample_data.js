@@ -1,8 +1,4 @@
-db = db.getSiblingDB('alv_mongo');
-
-db.createCollection('messages');
-
-const chatIds = [100001, 100002, 100003, 100004];
+﻿const chatIds = [100001, 100002, 100003, 100004];
 const users = ["admin", "user_test", "manager", "guest_bot"];
 const messagesBody = [
     "Привет! Как дела?",
