@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using AlvaresWeb.Application.DTOs;
+using Microsoft.Extensions.DependencyInjection;
 using AlvaresWeb.Application.Services;
 using AlvaresWeb.Application.Services.Interfaces;
 

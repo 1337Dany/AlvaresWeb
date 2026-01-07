@@ -29,4 +29,11 @@ public class UserRepository(SqlContext context) : IUserRepository
     {
         return await context.Users.CountAsync();
     }
+    
+    public async Task<User?> GetByUsername(string username)
+    {
+        // EF Core преобразует это в правильный SQL ILIKE или Lower-сравнение
+        return await context.Users
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+    }
 }

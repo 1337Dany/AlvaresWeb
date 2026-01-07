@@ -1,19 +1,212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>AlvaresWeb - SPA Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 450px; transition: width 0.3s; }
+        .wide { width: 800px; }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 10px 0 2px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        /* Стили для валидации */
+        .error-msg { color: #ff4d4d; font-size: 11px; margin-bottom: 8px; height: 14px; }
+        input.invalid { border-color: #ff4d4d; background-color: #fffbfa; }
+
+        button { padding: 10px 20px; background-color: #0088cc; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 5px; }
+        button:hover { background-color: #0077b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button.danger { background-color: #ff4d4d; }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 14px; }
+        th { background-color: #f8f9fa; }
+        .pagination { display: flex; justify-content: center; align-items: center; margin-top: 15px; }
+        #status { text-align: center; margin-top: 10px; font-weight: bold; }
+    </style>
 </head>
 <body>
-<div id="telegram-login"></div>
 
-<script async
-        src="https://telegram.org/js/telegram-widget.js?22"
-        data-telegram-login="YOUR_BOT_USERNAME"
-        data-size="large"
-        data-userpic="true"
-        data-lang="en"
-        data-onauth="onTelegramAuth(user)">
+<div class="container" id="mainContainer">
+    <div id="authBox">
+        <h2 id="title">Вход</h2>
+
+        <input type="text" id="username" placeholder="Логин" oninput="validateForm()">
+        <div id="userError" class="error-msg"></div>
+
+        <input type="password" id="password" placeholder="Пароль" oninput="validateForm()">
+        <div id="passError" class="error-msg"></div>
+
+        <button id="submitBtn" style="width:100%" onclick="send()">Отправить</button>
+
+        <div style="text-align:center; margin-top:15px; font-size:14px; color:#666;">
+            <span id="toggleMode" style="color:#0088cc; cursor:pointer; font-weight:bold;" onclick="toggle()">Зарегистрироваться</span>
+        </div>
+    </div>
+
+    <div id="dataBox" class="hidden">
+        <h2>Чаты и Сообщения</h2>
+        <div style="text-align: right;">
+            <button class="danger" onclick="logout()">Выйти</button>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Название чата</th>
+                <th>Telegram ID</th>
+                <th>Действие</th>
+            </tr>
+            </thead>
+            <tbody id="chatsTableBody"></tbody>
+        </table>
+
+        <div class="pagination">
+            <button onclick="changePage(-1)">Назад</button>
+            <span id="pageInfo" style="margin: 0 15px;">Страница 1</span>
+            <button onclick="changePage(1)">Вперед</button>
+        </div>
+    </div>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    let isReg = false;
+    let currentPage = 1;
+    const API_URL = "http://localhost:5000";
+    let jwtToken = "";
+
+    // Функция валидации (Client-side validation)
+    function validateForm() {
+        const u = document.getElementById('username');
+        const p = document.getElementById('password');
+        const uErr = document.getElementById('userError');
+        const pErr = document.getElementById('passError');
+        const btn = document.getElementById('submitBtn');
+
+        let isValid = true;
+
+        // Проверка логина
+        if (u.value.length > 0 && (u.value.length < 3 || !/^[a-zA-Z0-9_]+$/.test(u.value))) {
+            uErr.innerText = "Минимум 3 символа (лат. буквы и цифры)";
+            u.classList.add('invalid');
+            isValid = false;
+        } else {
+            uErr.innerText = "";
+            u.classList.remove('invalid');
+        }
+
+        // Проверка пароля
+        if (p.value.length > 0 && p.value.length < 6) {
+            pErr.innerText = "Пароль должен быть не менее 6 символов";
+            p.classList.add('invalid');
+            isValid = false;
+        } else {
+            pErr.innerText = "";
+            p.classList.remove('invalid');
+        }
+
+        // Блокируем кнопку, если пустые поля или ошибки
+        btn.disabled = !isValid || u.value === "" || p.value === "";
+        return isValid;
+    }
+
+    function toggle() {
+        isReg = !isReg;
+        document.getElementById('title').innerText = isReg ? "Регистрация" : "Вход";
+        document.getElementById('toggleMode').innerText = isReg ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Регистрация";
+        validateForm(); // Обновить состояние кнопки
+    }
+
+    function logout() {
+        jwtToken = "";
+        document.getElementById('dataBox').classList.add('hidden');
+        document.getElementById('authBox').classList.remove('hidden');
+        document.getElementById('mainContainer').classList.remove('wide');
+        document.getElementById('status').innerText = "";
+        document.getElementById('username').value = "";
+        document.getElementById('password').value = "";
+        validateForm();
+    }
+
+    async function send() {
+        if (!validateForm()) return;
+
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        const st = document.getElementById('status');
+
+        st.innerText = "Загрузка...";
+        st.style.color = "gray";
+
+        try {
+            const res = await fetch(`${API_URL}/auth${isReg ? "/register" : "/login"}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: u, password: p })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                if (isReg) {
+                    st.innerText = "Успешно! Теперь войдите.";
+                    st.style.color = "green";
+                    toggle();
+                } else {
+                    jwtToken = data.token;
+                    openDashboard();
+                }
+            } else {
+                st.innerText = "Ошибка: " + (data.message || "Неверные данные");
+                st.style.color = "red";
+            }
+        } catch (err) {
+            st.innerText = "Бэкенд недоступен";
+            st.style.color = "red";
+        }
+    }
+
+    function openDashboard() {
+        document.getElementById('authBox').classList.add('hidden');
+        document.getElementById('dataBox').classList.remove('hidden');
+        document.getElementById('mainContainer').classList.add('wide');
+        document.getElementById('status').innerText = "";
+        loadChats();
+    }
+
+    async function loadChats() {
+        try {
+            const res = await fetch(`${API_URL}/api/chats?page=${currentPage}&pageSize=5`, {
+                headers: { "Authorization": `Bearer ${jwtToken}` }
+            });
+            const result = await res.json();
+
+            const tbody = document.getElementById('chatsTableBody');
+            tbody.innerHTML = result.data.map(chat => `
+                <tr>
+                    <td>${chat.title}</td>
+                    <td>${chat.telegramChatId}</td>
+                    <td><button onclick="alert('ID Чата: ${chat.id}')">Детали</button></td>
+                </tr>
+            `).join('');
+
+            document.getElementById('pageInfo').innerText = `Страница ${currentPage}`;
+        } catch (err) {
+            console.error("Ошибка загрузки чатов", err);
+        }
+    }
+
+    function changePage(delta) {
+        if (currentPage + delta > 0) {
+            currentPage += delta;
+            loadChats();
+        }
+    }
+
+    // Инициализация кнопки при загрузке
+    validateForm();
 </script>
 </body>
 </html>

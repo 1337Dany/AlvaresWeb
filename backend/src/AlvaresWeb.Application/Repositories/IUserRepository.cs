@@ -8,4 +8,5 @@ public interface IUserRepository
     Task Create(User user);
     Task Update(User user);
     Task<int> GetCountAsync();
+    Task<User?> GetByUsername(string username);
 }

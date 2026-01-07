@@ -1,10 +1,12 @@
 ﻿using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using AlvaresWeb.Application.DTOs;
 using AlvaresWeb.Application.Repositories;
-using AlvaresWeb.Application.Services;
 using AlvaresWeb.Core.Models;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AlvarewWeb.API.Controllers;
 
@@ -13,67 +15,76 @@ namespace AlvarewWeb.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserRepository _users;
+    private readonly IConfiguration _config;
 
-    private static readonly long[] AdminTelegramIds =
-    {
-        123456789,
-        987654321
-    };
-
-    public AuthController(IUserRepository users)
+    public AuthController(IUserRepository users, IConfiguration config)
     {
         _users = users;
+        _config = config;
     }
 
-    [HttpPost("telegram")]
-    public async Task<IActionResult> TelegramLogin([FromBody] TelegramAuthDto dto)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] UserAuthDto dto)
     {
-        if (!TelegramHashValidator.IsValid(dto))
-            return Unauthorized("Invalid Telegram hash");
+        var userExists = await _users.GetByUsername(dto.Username);
+        if (userExists != null) return BadRequest(new { message = "User already exists" });
 
-        var user = await _users.GetByTelegramId(dto.Id);
-
-        if (user == null)
+        var user = new User
         {
-            user = new User
-            {
-                TelegramId = dto.Id,
-                Username = dto.Username,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Role = UserRole.User
-            };
+            Id = Guid.NewGuid(),
+            Username = dto.Username,
+            FirstName = dto.Username, // По умолчанию ставим логин
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Role = UserRole.User, // Level 3: начальная роль
+            RegisteredAt = DateTime.UtcNow
+        };
 
-            if (AdminTelegramIds.Contains(dto.Id))
-                user.Role = UserRole.Admin;
+        await _users.Create(user);
+        return Ok(new { message = "User registered" });
+    }
 
-            await _users.Create(user);
-        }
-        else
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] UserAuthDto dto)
+    {
+        var user = await _users.GetByUsername(dto.Username);
+    
+        if (user == null || string.IsNullOrEmpty(user.PasswordHash) || 
+            !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
-            if (AdminTelegramIds.Contains(dto.Id) && user.Role != UserRole.Admin)
-            {
-                user.Role = UserRole.Admin;
-                await _users.Update(user);
-            }
+            return Unauthorized(new { message = "Invalid username or password" });
         }
 
-        var claims = new List<Claim>
+        // Генерируем JWT токен (Level 2/3)
+        var token = GenerateJwtToken(user);
+
+        return Ok(new { 
+            token = token,
+            username = user.Username,
+            role = user.Role.ToString() 
+        });
+    }
+
+    private string GenerateJwtToken(User user)
+    {
+        var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
-        var identity = new ClaimsIdentity(claims, "TelegramCookies");
-        var principal = new ClaimsPrincipal(identity);
+        // Секретный ключ берем из конфига (appsettings.json)
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? "super_secret_key_1234567890_alvares"));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        await HttpContext.SignInAsync("TelegramCookies", principal);
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddDays(1),
+            signingCredentials: creds
+        );
 
-        return Ok(new
-        {
-            user.Id,
-            user.Username,
-            Role = user.Role.ToString()
-        });
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

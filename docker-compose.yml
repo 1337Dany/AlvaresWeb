@@ -1,22 +1,59 @@
-version: "3.9"
-
 services:
-  api:
-    build: ./backend
-    container_name: alvaresweb
+  # --- PostgreSQL ---
+  db:
+    image: postgres:15-alpine
+    container_name: alvares_db
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Postgres: Host=host.docker.internal;Port=5432;Database=alvares;Username=alvares;Password=supersecret
-      ConnectionStrings__Mongo: mongodb://host.docker.internal:27017
+      POSTGRES_DB: alv
+      POSTGRES_USER: botadmin
+      POSTGRES_PASSWORD: supersecret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Монтируем твой init.sql (путь от корня проекта)
+      - ./infra/db/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # --- MongoDB ---
+  mongo:
+    image: mongo:6
+    container_name: alvares_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+      # Монтируем твой init.js
+      - ./infra/db/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+
+  # --- Бэкенд (API) ---
+  api:
+    build: ./backend
+    container_name: alvares_api
+    restart: unless-stopped
+    depends_on:
+      - db
+      - mongo
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      # Внутренние имена сервисов Docker: db и mongo
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=alv;Username=botadmin;Password=supersecret
+      - ConnectionStrings__MongoConnection=mongodb://mongo:27017/alv_mongo
     ports:
       - "5000:80"
 
+  # --- Фронтенд ---
   frontend:
     build: ./frontend
-    container_name: alvaresweb_frontend
+    container_name: alvares_frontend
     restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
       - api
+
+volumes:
+  pgdata:
+  mongodata:
