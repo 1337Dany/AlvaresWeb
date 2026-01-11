@@ -562,8 +562,7 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
-# ASP.NET Scaffolding
-ScaffoldingReadMe.txt
+# ASP.NET Scaffolding.
 
 # StyleCop
 StyleCopReport.xml
