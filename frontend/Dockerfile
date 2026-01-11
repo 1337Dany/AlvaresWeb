@@ -1,16 +1,9 @@
-# build
-FROM node:20-alpine AS build
-WORKDIR /app
-
-COPY spa/package*.json ./
-RUN npm install
-
-COPY spa/ .
-RUN npm run build
-
-# nginx
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+
+# Копируем всё из папки spa в корень nginx
+COPY spa/ /usr/share/nginx/html/
+
+# Копируем конфиг
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
