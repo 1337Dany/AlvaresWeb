@@ -556,12 +556,13 @@ dlldata.c
 BenchmarkDotNet.Artifacts/
 
 # .NET Core
+appsettings.json
+appsettings.Developments.json
 project.lock.json
 project.fragment.lock.json
 artifacts/
 
-# ASP.NET Scaffolding
-ScaffoldingReadMe.txt
+# ASP.NET Scaffolding.
 
 # StyleCop
 StyleCopReport.xml
@@ -856,3 +857,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
