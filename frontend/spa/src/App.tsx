@@ -203,7 +203,7 @@ export default function App() {
 
             const formattedChats: Chat[] = data.map((item: any) => ({
                 chatId: item.Id || item.id,
-                chatName: item.Title || item.title
+                chatName: item.Title || item.title,
             }));
 
             setAllChats(formattedChats);
