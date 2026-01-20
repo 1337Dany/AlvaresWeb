@@ -22,6 +22,7 @@ interface Chat {
 }
 
 interface ChatMessage {
+    id: string;
     chatId: string;
     message: string;
     timestamp: string;
@@ -179,9 +180,26 @@ export default function App() {
         setSelectedMessage(item);
     };
 
-    const handleDelete = () => {
-        alert(`Delete message: ${selectedMessage?.message}`);
-        setSelectedMessage(null);
+    const handleDelete = async () => {
+        if (!selectedMessage) return;
+
+        if (window.confirm("Are you sure you want to delete this message?")) {
+            try {
+                const response = await fetch(
+                    `/api/Message/chats/${selectedMessage.chatId}/messages/${selectedMessage.id}`,
+                    { method: 'DELETE' }
+                );
+
+                if (response.ok) {
+                    setAllMessages(prev => prev.filter(m => m.id !== selectedMessage.id));
+                    setSelectedMessage(null);
+                } else {
+                    alert("Failed to delete message");
+                }
+            } catch (error) {
+                console.error("Delete error:", error);
+            }
+        }
     };
 
     const handleEdit = () => {
@@ -229,6 +247,7 @@ export default function App() {
             const data = await response.json();
 
             const formattedMessages: ChatMessage[] = data.map((item: any) => ({
+                id: item.id,
                 chatId: chatId,
                 message: item.text,
                 timestamp: new Date(item.createdAt).toLocaleString(),
