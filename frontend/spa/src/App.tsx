@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, User, HelpCircle, MessageSquare, ChevronLeft, ChevronRight, ArrowLeft, Search, Eye, Edit, Trash2, X } from 'lucide-react';
 
 type ViewType = 'welcome' | 'chatList' | 'chatMessages';
@@ -14,6 +14,16 @@ interface ChatMessage {
   chatId: string;
   message: string;
   timestamp: string;
+}
+
+interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
 }
 
 // Mock data for chats
@@ -73,7 +83,16 @@ const generateMockMessages = (chatId: string): ChatMessage[] => {
 
 const ITEMS_PER_PAGE = 5;
 
+// Declare global onTelegramAuth function
+declare global {
+  interface Window {
+    onTelegramAuth: (user: TelegramUser) => void;
+  }
+}
+
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('welcome');
@@ -82,6 +101,48 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [chatListPage, setChatListPage] = useState(1);
   const [messagesPage, setMessagesPage] = useState(1);
+
+  // Initialize Telegram Login Widget
+  useEffect(() => {
+    // Check if user is already logged in (from localStorage)
+    const storedUser = localStorage.getItem('telegramUser');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setTelegramUser(user);
+      setIsAuthenticated(true);
+    }
+
+    // Define the global callback function for Telegram widget
+    window.onTelegramAuth = (user: TelegramUser) => {
+      console.log('Logged in as ' + user.first_name + ' ' + (user.last_name || ''));
+      setTelegramUser(user);
+      setIsAuthenticated(true);
+      // Store user data in localStorage
+      localStorage.setItem('telegramUser', JSON.stringify(user));
+    };
+
+    // Load Telegram widget script only if not authenticated
+    if (!isAuthenticated) {
+      const script = document.createElement('script');
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.setAttribute('data-telegram-login', 'find_context_bot');
+      script.setAttribute('data-size', 'large');
+      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+      script.async = true;
+      
+      const container = document.getElementById('telegram-login-container');
+      if (container) {
+        container.appendChild(script);
+      }
+    }
+  }, [isAuthenticated]);
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setTelegramUser(null);
+    localStorage.removeItem('telegramUser');
+    setCurrentView('welcome');
+  };
 
   const handleChatSelect = (chatId: string) => {
     setSelectedChatId(chatId);
@@ -135,6 +196,21 @@ export default function App() {
   const messagesEndIndex = messagesStartIndex + ITEMS_PER_PAGE;
   const currentMessages = filteredMessages.slice(messagesStartIndex, messagesEndIndex);
 
+  // If not authenticated, show login screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello!</h1>
+            <p className="text-gray-600">Welcome to Telegram Bot Dashboard</p>
+          </div>
+          <div id="telegram-login-container" className="flex justify-center"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Header */}
@@ -155,14 +231,20 @@ export default function App() {
             className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <User className="w-5 h-5 text-gray-700" />
-            <span className="text-sm font-medium text-gray-700">@myaccount</span>
+            <span className="text-sm font-medium text-gray-700">
+              {telegramUser?.username ? `@${telegramUser.username}` : telegramUser?.first_name}
+            </span>
           </button>
 
           {isAccountOpen && (
             <div className="absolute top-full mt-2 right-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
               <div className="px-4 py-2 border-b border-gray-100">
-                <p className="text-sm font-medium text-gray-900">@myaccount</p>
-                <p className="text-xs text-gray-500">account@example.com</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {telegramUser?.first_name} {telegramUser?.last_name || ''}
+                </p>
+                {telegramUser?.username && (
+                  <p className="text-xs text-gray-500">@{telegramUser.username}</p>
+                )}
               </div>
               <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
                 Profile Settings
@@ -174,7 +256,10 @@ export default function App() {
                 Security
               </button>
               <hr className="my-2 border-gray-200" />
-              <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 transition-colors">
+              <button 
+                onClick={handleLogout}
+                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 transition-colors"
+              >
                 Sign Out
               </button>
             </div>
