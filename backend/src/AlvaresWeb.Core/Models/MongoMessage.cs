@@ -10,7 +10,9 @@ public class MongoMessage
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = null!;
 
-    [BsonElement("chatId")] public string TelegramChatId { get; set; }
+    [BsonElement("chatId")]
+    [BsonRepresentation(BsonType.String)]
+    public string TelegramChatId { get; set; }
 
     [BsonElement("telegramUserId")] public string TelegramUserId { get; set; }
 
