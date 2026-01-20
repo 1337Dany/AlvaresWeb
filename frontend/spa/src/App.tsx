@@ -61,36 +61,36 @@ interface TelegramUser {
 // };
 
 // Mock data for messages
-const generateMockMessages = (chatId: string): ChatMessage[] => {
-    const messages = [
-        "Hello, how can I help you?",
-        "I need information about your services",
-        "What are your business hours?",
-        "Thank you for the quick response!",
-        "Can you provide pricing details?",
-        "Is there a mobile app available?",
-        "How do I reset my password?",
-        "Great service, very satisfied!",
-        "I have a question about billing",
-        "When will the new features be released?",
-        "I'm having trouble logging in",
-        "Can I schedule a demo?",
-        "What payment methods do you accept?",
-        "How do I cancel my subscription?",
-        "The bot is very helpful, thanks!",
-        "I need technical support",
-        "Are there any discounts available?",
-        "How do I update my profile?",
-        "What's the refund policy?",
-        "Can I integrate this with other tools?",
-    ];
-
-    return messages.map((msg, idx) => ({
-        chatId: chatId,
-        message: msg,
-        timestamp: new Date(Date.now() - idx * 3600000).toLocaleString(),
-    }));
-};
+// const generateMockMessages = (chatId: string): ChatMessage[] => {
+//     const messages = [
+//         "Hello, how can I help you?",
+//         "I need information about your services",
+//         "What are your business hours?",
+//         "Thank you for the quick response!",
+//         "Can you provide pricing details?",
+//         "Is there a mobile app available?",
+//         "How do I reset my password?",
+//         "Great service, very satisfied!",
+//         "I have a question about billing",
+//         "When will the new features be released?",
+//         "I'm having trouble logging in",
+//         "Can I schedule a demo?",
+//         "What payment methods do you accept?",
+//         "How do I cancel my subscription?",
+//         "The bot is very helpful, thanks!",
+//         "I need technical support",
+//         "Are there any discounts available?",
+//         "How do I update my profile?",
+//         "What's the refund policy?",
+//         "Can I integrate this with other tools?",
+//     ];
+//
+//     return messages.map((msg, idx) => ({
+//         chatId: chatId,
+//         message: msg,
+//         timestamp: new Date(Date.now() - idx * 3600000).toLocaleString(),
+//     }));
+// };
 
 const ITEMS_PER_PAGE = 5;
 
@@ -115,6 +115,9 @@ export default function App() {
 
     const [allChats, setAllChats] = useState<Chat[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
+    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
     // Initialize Telegram Login Widget
     useEffect(() => {
@@ -163,6 +166,7 @@ export default function App() {
         setCurrentView('chatMessages');
         setMessagesPage(1);
         setSearchQuery('');
+        fetchMessages(chatId);
     };
 
     const handleBackToChatList = () => {
@@ -215,6 +219,30 @@ export default function App() {
         }
     };
 
+    // Messages from chat logic
+    const fetchMessages = async (chatId: string) => {
+        setIsMessagesLoading(true);
+        try {
+            const response = await fetch(`/api/Message/chats/${chatId}`);
+            if (!response.ok) throw new Error('Failed to load messages');
+
+            const data = await response.json();
+
+            const formattedMessages: ChatMessage[] = data.map((item: any) => ({
+                chatId: chatId,
+                message: item.text,
+                timestamp: new Date(item.createdAt).toLocaleString(),
+            }));
+
+            setAllMessages(formattedMessages);
+        } catch (error) {
+            console.error("Fetch messages error:", error);
+            alert("Failed to load messages for this chat");
+        } finally {
+            setIsMessagesLoading(false);
+        }
+    };
+
     //const allChats = generateMockChats();
     const chatTotalPages = Math.ceil(allChats.length / ITEMS_PER_PAGE);
     const chatStartIndex = (chatListPage - 1) * ITEMS_PER_PAGE;
@@ -222,7 +250,7 @@ export default function App() {
     const currentChats = allChats.slice(chatStartIndex, chatEndIndex);
 
     // Messages Logic
-    const allMessages = selectedChatId ? generateMockMessages(selectedChatId) : [];
+    //const allMessages = selectedChatId ? generateMockMessages(selectedChatId) : [];
     const filteredMessages = allMessages.filter(msg =>
         msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
         msg.chatId.toLowerCase().includes(searchQuery.toLowerCase())
