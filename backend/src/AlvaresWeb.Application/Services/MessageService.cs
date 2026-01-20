@@ -17,4 +17,15 @@ public class MessageService : IMessageService
     {
         return _messageRepository.GetAllMessages();
     }
+
+    public async Task<IEnumerable<ChatMessageDto>> GetAllMessagesByChatId(string chatId)
+    {
+        var messages = await _messageRepository.GetAllMessagesByChatId(chatId);
+        return messages.Select(u => new ChatMessageDto()
+        {
+            TelegramUserId = u.TelegramUserId,
+            Text = u.Text,
+            CreatedAt = u.CreatedAt,
+        });
+    }
 }

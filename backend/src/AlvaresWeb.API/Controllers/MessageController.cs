@@ -20,4 +20,10 @@ public class MessageController
     {
         return await _messageService.GetAllMessages();
     }
+
+    [HttpGet("chats/{chatId}")]
+    public async Task<IEnumerable<ChatMessageDto>> GetAllMessagesByChatId(string chatId)
+    {
+        return await _messageService.GetAllMessagesByChatId(chatId);
+    }
 }
