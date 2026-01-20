@@ -19,8 +19,6 @@ type ViewType = 'welcome' | 'chatList' | 'chatMessages';
 interface Chat {
     chatId: string;
     chatName: string;
-    lastMessage: string;
-    messageCount: number;
 }
 
 interface ChatMessage {
@@ -199,22 +197,19 @@ export default function App() {
         setIsLoading(true);
         try {
             const response = await fetch('/api/chats');
-            if (!response.ok) throw new Error('Ошибка при загрузке чатов');
+            if (!response.ok) throw new Error('Chat load error');
 
             const data = await response.json();
 
-            // Маппим данные из вашего формата (Id, Title) в формат интерфейса
             const formattedChats: Chat[] = data.map((item: any) => ({
                 chatId: item.Id || item.id,
-                chatName: item.Title || item.title,
-                lastMessage: "Загружено из БД", // Можно дополнить, если API вернет
-                messageCount: 0
+                chatName: item.Title || item.title
             }));
 
             setAllChats(formattedChats);
         } catch (error) {
             console.error("Fetch error:", error);
-            alert("Не удалось загрузить список чатов");
+            alert("Failed to load chats");
         } finally {
             setIsLoading(false);
         }
@@ -262,7 +257,7 @@ export default function App() {
                 <button
                     onClick={() => {
                         setCurrentView('chatList');
-                        fetchChats(); // Вызываем загрузку данных
+                        fetchChats();
                     }}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors mr-auto"
                 >
