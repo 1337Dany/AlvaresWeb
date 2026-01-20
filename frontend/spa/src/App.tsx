@@ -446,10 +446,6 @@ export default function App() {
                                                 <th className="text-left py-3 px-4 font-semibold text-gray-900">Chat
                                                     Name
                                                 </th>
-                                                <th className="text-left py-3 px-4 font-semibold text-gray-900">Last
-                                                    Message
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold text-gray-900">Messages</th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -461,8 +457,6 @@ export default function App() {
                                                 >
                                                     <td className="py-3 px-4 text-gray-700 font-mono text-sm">{chat.chatId}</td>
                                                     <td className="py-3 px-4 text-gray-900 font-medium">{chat.chatName}</td>
-                                                    <td className="py-3 px-4 text-gray-600">{chat.lastMessage}</td>
-                                                    <td className="py-3 px-4 text-gray-700">{chat.messageCount}</td>
                                                 </tr>
                                             ))}
                                             </tbody>
