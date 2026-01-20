@@ -1,580 +1,293 @@
-import { useState, useEffect } from 'react';
-import { Settings, User, HelpCircle, MessageSquare, ChevronLeft, ChevronRight, ArrowLeft, Search, Eye, Edit, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+    Settings,
+    User,
+    HelpCircle,
+    MessageSquare,
+    ChevronLeft,
+    ChevronRight,
+    ArrowLeft,
+    Search,
+    Eye,
+    Edit,
+    Trash2,
+    X
+} from 'lucide-react';
 
 type ViewType = 'welcome' | 'chatList' | 'chatMessages';
 
 interface Chat {
-  chatId: string;
-  chatName: string;
-  lastMessage: string;
-  messageCount: number;
+    chatId: string;
+    chatName: string;
+    lastMessage: string;
+    messageCount: number;
 }
 
 interface ChatMessage {
-  chatId: string;
-  message: string;
-  timestamp: string;
+    chatId: string;
+    message: string;
+    timestamp: string;
 }
 
 interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
+    id: number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    photo_url?: string;
+    auth_date: number;
+    hash: string;
 }
-
-// Mock data for chats
-const generateMockChats = (): Chat[] => {
-  const chats = [
-    { name: 'John Doe', lastMessage: 'Thanks for the help!', count: 15 },
-    { name: 'Jane Smith', lastMessage: 'When is the next update?', count: 8 },
-    { name: 'Tech Support', lastMessage: 'Issue resolved', count: 23 },
-    { name: 'Sales Team', lastMessage: 'New proposal sent', count: 12 },
-    { name: 'Marketing Group', lastMessage: 'Campaign launched', count: 45 },
-    { name: 'Developer Chat', lastMessage: 'Bug fixed', count: 67 },
-    { name: 'Customer #1234', lastMessage: 'Product inquiry', count: 5 },
-    { name: 'VIP Client', lastMessage: 'Meeting scheduled', count: 34 },
-    { name: 'Beta Testers', lastMessage: 'Feedback submitted', count: 29 },
-    { name: 'General Support', lastMessage: 'Question about pricing', count: 18 },
-  ];
-
-  return chats.map((chat, idx) => ({
-    chatId: `chat_${100000 + idx}`,
-    chatName: chat.name,
-    lastMessage: chat.lastMessage,
-    messageCount: chat.count,
-  }));
-};
-
-// Mock data for messages
-const generateMockMessages = (chatId: string): ChatMessage[] => {
-  const messages = [
-    "Hello, how can I help you?",
-    "I need information about your services",
-    "What are your business hours?",
-    "Thank you for the quick response!",
-    "Can you provide pricing details?",
-    "Is there a mobile app available?",
-    "How do I reset my password?",
-    "Great service, very satisfied!",
-    "I have a question about billing",
-    "When will the new features be released?",
-    "I'm having trouble logging in",
-    "Can I schedule a demo?",
-    "What payment methods do you accept?",
-    "How do I cancel my subscription?",
-    "The bot is very helpful, thanks!",
-    "I need technical support",
-    "Are there any discounts available?",
-    "How do I update my profile?",
-    "What's the refund policy?",
-    "Can I integrate this with other tools?",
-  ];
-
-  return messages.map((msg, idx) => ({
-    chatId: chatId,
-    message: msg,
-    timestamp: new Date(Date.now() - idx * 3600000).toLocaleString(),
-  }));
-};
 
 const ITEMS_PER_PAGE = 5;
 
-// Declare global onTelegramAuth function
-declare global {
-  interface Window {
-    onTelegramAuth: (user: TelegramUser) => void;
-  }
-}
+/* ---------- MOCK MESSAGES ---------- */
+const generateMockMessages = (chatId: string): ChatMessage[] => {
+    return Array.from({ length: 23 }, (_, i) => ({
+        chatId,
+        message: `Mock message #${i + 1} from ${chatId}`,
+        timestamp: new Date(Date.now() - i * 60000).toLocaleString()
+    }));
+};
 
+/* ---------- APP ---------- */
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<ViewType>('welcome');
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [chatListPage, setChatListPage] = useState(1);
-  const [messagesPage, setMessagesPage] = useState(1);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
 
-  // Initialize Telegram Login Widget
-  useEffect(() => {
-    // Check if user is already logged in (from localStorage)
-    const storedUser = localStorage.getItem('telegramUser');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setTelegramUser(user);
-      setIsAuthenticated(true);
-    }
+    const [currentView, setCurrentView] = useState<ViewType>('welcome');
+    const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
-    // Define the global callback function for Telegram widget
-    window.onTelegramAuth = (user: TelegramUser) => {
-      console.log('Logged in as ' + user.first_name + ' ' + (user.last_name || ''));
-      setTelegramUser(user);
-      setIsAuthenticated(true);
-      // Store user data in localStorage
-      localStorage.setItem('telegramUser', JSON.stringify(user));
+    const [chats, setChats] = useState<Chat[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [chatListPage, setChatListPage] = useState(1);
+    const [messagesPage, setMessagesPage] = useState(1);
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+
+    /* ---------- AUTH MOCK ---------- */
+    useEffect(() => {
+        const stored = localStorage.getItem('telegramUser');
+        if (stored) {
+            setTelegramUser(JSON.parse(stored));
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    /* ---------- LOAD CHATS FROM BACKEND ---------- */
+    const loadChats = async (userId: number) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(`/api/chats?userId=${userId}`);
+            if (!res.ok) throw new Error('Failed to load chats');
+            const data: Chat[] = await res.json();
+            setChats(data);
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    // Load Telegram widget script only if not authenticated
-    if (!isAuthenticated) {
-      const script = document.createElement('script');
-      script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.setAttribute('data-telegram-login', 'find_context_bot');
-      script.setAttribute('data-size', 'large');
-      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-      script.async = true;
-      
-      const container = document.getElementById('telegram-login-container');
-      if (container) {
-        container.appendChild(script);
-      }
-    }
-  }, [isAuthenticated]);
+    /* ---------- CHAT SELECT ---------- */
+    const handleChatSelect = (chatId: string) => {
+        setSelectedChatId(chatId);
+        setCurrentView('chatMessages');
+        setMessagesPage(1);
+        setSearchQuery('');
+        setMessages(generateMockMessages(chatId));
+    };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setTelegramUser(null);
-    localStorage.removeItem('telegramUser');
-    setCurrentView('welcome');
-  };
+    /* ---------- PAGINATION ---------- */
+    const chatTotalPages = Math.ceil(chats.length / ITEMS_PER_PAGE);
+    const chatStart = (chatListPage - 1) * ITEMS_PER_PAGE;
+    const chatEnd = chatStart + ITEMS_PER_PAGE;
+    const currentChats = chats.slice(chatStart, chatEnd);
 
-  const handleChatSelect = (chatId: string) => {
-    setSelectedChatId(chatId);
-    setCurrentView('chatMessages');
-    setMessagesPage(1);
-    setSearchQuery('');
-  };
-
-  const handleBackToChatList = () => {
-    setCurrentView('chatList');
-    setSelectedChatId(null);
-    setSelectedMessage(null);
-  };
-
-  const handleRowClick = (item: ChatMessage) => {
-    setSelectedMessage(item);
-  };
-
-  const handleDelete = () => {
-    alert(`Delete message: ${selectedMessage?.message}`);
-    setSelectedMessage(null);
-  };
-
-  const handleEdit = () => {
-    alert(`Edit message: ${selectedMessage?.message}`);
-  };
-
-  const handleView = () => {
-    alert(`View details for message: ${selectedMessage?.message}`);
-  };
-
-  const handleSearch = () => {
-    setMessagesPage(1);
-  };
-
-  // Chat List Logic
-  const allChats = generateMockChats();
-  const chatTotalPages = Math.ceil(allChats.length / ITEMS_PER_PAGE);
-  const chatStartIndex = (chatListPage - 1) * ITEMS_PER_PAGE;
-  const chatEndIndex = chatStartIndex + ITEMS_PER_PAGE;
-  const currentChats = allChats.slice(chatStartIndex, chatEndIndex);
-
-  // Messages Logic
-  const allMessages = selectedChatId ? generateMockMessages(selectedChatId) : [];
-  const filteredMessages = allMessages.filter(msg => 
-    msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    msg.chatId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const messagesTotalPages = Math.ceil(filteredMessages.length / ITEMS_PER_PAGE);
-  const messagesStartIndex = (messagesPage - 1) * ITEMS_PER_PAGE;
-  const messagesEndIndex = messagesStartIndex + ITEMS_PER_PAGE;
-  const currentMessages = filteredMessages.slice(messagesStartIndex, messagesEndIndex);
-
-  // If not authenticated, show login screen
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello!</h1>
-            <p className="text-gray-600">Welcome to Telegram Bot Dashboard</p>
-          </div>
-          <div id="telegram-login-container" className="flex justify-center"></div>
-        </div>
-      </div>
+    const filteredMessages = messages.filter(m =>
+        m.message.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-end px-6 z-40 pl-24">
-        {/* Chat List Button */}
-        <button
-          onClick={() => setCurrentView('chatList')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors mr-auto"
-        >
-          <MessageSquare className="w-5 h-5 text-gray-700" />
-          <span className="text-sm font-medium text-gray-700">Chat List</span>
-        </button>
+    const messagesTotalPages = Math.ceil(filteredMessages.length / ITEMS_PER_PAGE);
+    const msgStart = (messagesPage - 1) * ITEMS_PER_PAGE;
+    const msgEnd = msgStart + ITEMS_PER_PAGE;
+    const currentMessages = filteredMessages.slice(msgStart, msgEnd);
 
-        {/* Right: Account */}
-        <div className="relative">
-          <button
-            onClick={() => setIsAccountOpen(!isAccountOpen)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <User className="w-5 h-5 text-gray-700" />
-            <span className="text-sm font-medium text-gray-700">
-              {telegramUser?.username ? `@${telegramUser.username}` : telegramUser?.first_name}
-            </span>
-          </button>
+    /* ---------- LOGIN SCREEN ---------- */
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <button
+                    onClick={() => {
+                        const mockUser: TelegramUser = {
+                            id: 1,
+                            first_name: 'Test',
+                            auth_date: Date.now(),
+                            hash: 'mock'
+                        };
+                        localStorage.setItem('telegramUser', JSON.stringify(mockUser));
+                        setTelegramUser(mockUser);
+                        setIsAuthenticated(true);
+                    }}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+                >
+                    Mock Login
+                </button>
+            </div>
+        );
+    }
 
-          {isAccountOpen && (
-            <div className="absolute top-full mt-2 right-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-              <div className="px-4 py-2 border-b border-gray-100">
-                <p className="text-sm font-medium text-gray-900">
-                  {telegramUser?.first_name} {telegramUser?.last_name || ''}
-                </p>
-                {telegramUser?.username && (
-                  <p className="text-xs text-gray-500">@{telegramUser.username}</p>
+    /* ---------- UI ---------- */
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <header className="h-16 bg-white border-b flex items-center px-6">
+                <button
+                    onClick={() => {
+                        setCurrentView('chatList');
+                        telegramUser && loadChats(telegramUser.id);
+                    }}
+                    className="flex items-center gap-2"
+                >
+                    <MessageSquare />
+                    Chat List
+                </button>
+            </header>
+
+            <main className="p-6">
+                {currentView === 'welcome' && (
+                    <p>Click Chat List to load chats</p>
                 )}
-              </div>
-              <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                Profile Settings
-              </button>
-              <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                Privacy
-              </button>
-              <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                Security
-              </button>
-              <hr className="my-2 border-gray-200" />
-              <button 
-                onClick={handleLogout}
-                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
 
-      {/* Left Sidebar */}
-      <aside className="fixed top-0 left-0 w-20 h-full bg-white border-r border-gray-200 z-40 flex flex-col items-center pt-4">
-        {/* Settings Menu */}
-        <div className="relative">
-          <button
-            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            className="p-3 rounded-lg hover:bg-gray-100 transition-colors"
-            title="Settings"
-          >
-            <Settings className="w-6 h-6 text-gray-700" />
-          </button>
-          
-          {isSettingsOpen && (
-            <div className="absolute top-0 left-full ml-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-              <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                Bot Configuration
-              </button>
-              <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                API Settings
-              </button>
-              <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                Webhook Settings
-              </button>
-              <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                Notifications
-              </button>
-            </div>
-          )}
-        </div>
+                {currentView === 'chatList' && (
+                    <>
+                        {isLoading && <p>Loading...</p>}
+                        {error && <p className="text-red-600">{error}</p>}
 
-        {/* Support Button - Bottom of Sidebar */}
-        <div className="mt-auto mb-6">
-          <button
-            className="p-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            title="Support"
-          >
-            <HelpCircle className="w-6 h-6" />
-          </button>
-        </div>
-      </aside>
+                        <table className="w-full">
+                            <thead>
+                            <tr>
+                                <th>Chat ID</th>
+                                <th>Name</th>
+                                <th>Last Message</th>
+                                <th>Count</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {currentChats.map(chat => (
+                                <tr
+                                    key={chat.chatId}
+                                    onClick={() => handleChatSelect(chat.chatId)}
+                                    className="cursor-pointer hover:bg-gray-100"
+                                >
+                                    <td>{chat.chatId}</td>
+                                    <td>{chat.chatName}</td>
+                                    <td>{chat.lastMessage}</td>
+                                    <td>{chat.messageCount}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
 
-      {/* CRUD Operations Panel */}
-      {selectedMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Message Operations</h3>
-              <button
-                onClick={() => setSelectedMessage(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">Chat ID</label>
-                <p className="text-gray-900 font-mono">{selectedMessage.chatId}</p>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-gray-600">Message</label>
-                <p className="text-gray-900">{selectedMessage.message}</p>
-              </div>
+                        {chats.length > 0 && (
+                            <div className="flex gap-2 mt-4">
+                                <button
+                                    disabled={chatListPage === 1}
+                                    onClick={() => setChatListPage(p => p - 1)}
+                                >
+                                    <ChevronLeft />
+                                </button>
 
-              <div>
-                <label className="text-sm font-medium text-gray-600">Timestamp</label>
-                <p className="text-gray-900">{selectedMessage.timestamp}</p>
-              </div>
-            </div>
+                                <span>{chatListPage} / {chatTotalPages}</span>
 
-            <div className="p-6 border-t border-gray-200 flex items-center gap-3">
-              <button
-                onClick={handleView}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                <span>View</span>
-              </button>
-              
-              <button
-                onClick={handleEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Edit</span>
-              </button>
-              
-              <button
-                onClick={handleDelete}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete</span>
-              </button>
-              
-              <button
-                onClick={() => setSelectedMessage(null)}
-                className="ml-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                                <button
+                                    disabled={chatListPage === chatTotalPages}
+                                    onClick={() => setChatListPage(p => p + 1)}
+                                >
+                                    <ChevronRight />
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
 
-      {/* Main Content Area */}
-      <main className="pt-16 pl-20 min-h-screen">
-        <div className="h-full">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-6">Telegram Bot Dashboard</h1>
-              
-              {/* Welcome View */}
-              {currentView === 'welcome' && (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <p className="text-gray-600 mb-6">Click "Chat List" to view all your chats</p>
+                {currentView === 'chatMessages' && selectedChatId && (
+                    <>
+                        <button
+                            onClick={() => setCurrentView('chatList')}
+                            className="mb-4 flex items-center gap-2"
+                        >
+                            <ArrowLeft /> Back
+                        </button>
+
+                        <input
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder="Search messages"
+                            className="border px-3 py-2 mb-4 w-full"
+                        />
+
+                        <table className="w-full">
+                            <thead>
+                            <tr>
+                                <th>Message</th>
+                                <th>Time</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {currentMessages.map((m, i) => (
+                                <tr
+                                    key={i}
+                                    onClick={() => setSelectedMessage(m)}
+                                    className="cursor-pointer hover:bg-gray-100"
+                                >
+                                    <td>{m.message}</td>
+                                    <td>{m.timestamp}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+
+                        <div className="flex gap-2 mt-4">
+                            <button
+                                disabled={messagesPage === 1}
+                                onClick={() => setMessagesPage(p => p - 1)}
+                            >
+                                <ChevronLeft />
+                            </button>
+
+                            <span>{messagesPage} / {messagesTotalPages}</span>
+
+                            <button
+                                disabled={messagesPage === messagesTotalPages}
+                                onClick={() => setMessagesPage(p => p + 1)}
+                            >
+                                <ChevronRight />
+                            </button>
+                        </div>
+                    </>
+                )}
+            </main>
+
+            {selectedMessage && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg w-96">
+                        <p>{selectedMessage.message}</p>
+                        <button
+                            onClick={() => setSelectedMessage(null)}
+                            className="mt-4 px-4 py-2 bg-gray-200 rounded"
+                        >
+                            Close
+                        </button>
+                    </div>
                 </div>
-              )}
-
-              {/* Chat List View */}
-              {currentView === 'chatList' && (
-                <div className="space-y-4">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Chat ID</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Chat Name</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Last Message</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Messages</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {currentChats.map((chat, index) => (
-                          <tr
-                            key={`${chat.chatId}-${index}`}
-                            onClick={() => handleChatSelect(chat.chatId)}
-                            className="border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer"
-                          >
-                            <td className="py-3 px-4 text-gray-700 font-mono text-sm">{chat.chatId}</td>
-                            <td className="py-3 px-4 text-gray-900 font-medium">{chat.chatName}</td>
-                            <td className="py-3 px-4 text-gray-600">{chat.lastMessage}</td>
-                            <td className="py-3 px-4 text-gray-700">{chat.messageCount}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Chat List Pagination */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-600">
-                      Showing {chatStartIndex + 1} to {Math.min(chatEndIndex, allChats.length)} of {allChats.length} chats
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => chatListPage > 1 && setChatListPage(chatListPage - 1)}
-                        disabled={chatListPage === 1}
-                        className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Previous</span>
-                      </button>
-                      
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: chatTotalPages }, (_, i) => i + 1).map((page) => (
-                          <button
-                            key={page}
-                            onClick={() => setChatListPage(page)}
-                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                              chatListPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      <button
-                        onClick={() => chatListPage < chatTotalPages && setChatListPage(chatListPage + 1)}
-                        disabled={chatListPage === chatTotalPages}
-                        className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <span className="text-sm font-medium">Next</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Chat Messages View */}
-              {currentView === 'chatMessages' && selectedChatId && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 mb-4">
-                    <button
-                      onClick={handleBackToChatList}
-                      className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span className="text-sm font-medium">Back to Chat List</span>
-                    </button>
-                    <div className="text-sm text-gray-600">
-                      Viewing messages from: <span className="font-mono font-semibold">{selectedChatId}</span>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Chat ID</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Message</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Timestamp</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {currentMessages.map((item, index) => (
-                          <tr
-                            key={`${item.chatId}-${index}`}
-                            onClick={() => handleRowClick(item)}
-                            className="border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer"
-                          >
-                            <td className="py-3 px-4 text-gray-700 font-mono text-sm">{item.chatId}</td>
-                            <td className="py-3 px-4 text-gray-700">{item.message}</td>
-                            <td className="py-3 px-4 text-gray-600 text-sm">{item.timestamp}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Messages Pagination */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-600">
-                      Showing {messagesStartIndex + 1} to {Math.min(messagesEndIndex, filteredMessages.length)} of {filteredMessages.length} messages
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => messagesPage > 1 && setMessagesPage(messagesPage - 1)}
-                        disabled={messagesPage === 1}
-                        className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Previous</span>
-                      </button>
-                      
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: messagesTotalPages }, (_, i) => i + 1).map((page) => (
-                          <button
-                            key={page}
-                            onClick={() => setMessagesPage(page)}
-                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                              messagesPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      <button
-                        onClick={() => messagesPage < messagesTotalPages && setMessagesPage(messagesPage + 1)}
-                        disabled={messagesPage === messagesTotalPages}
-                        className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <span className="text-sm font-medium">Next</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Search Label at Bottom */}
-                  <div className="pt-4 border-t border-gray-200">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Search Messages</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        placeholder="Search by message or chat ID..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        onClick={handleSearch}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Search className="w-4 h-4" />
-                        <span>Search</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+            )}
         </div>
-      </main>
-    </div>
-  );
+    );
 }
