@@ -37,31 +37,31 @@ public class AuthController : ControllerBase
         {
             user = new User
             {
-                TelegramId = dto.Id,
-                Username = dto.Username,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Role = UserRole.User
+                telegram_id = dto.Id,
+                username = dto.Username,
+                first_name = dto.FirstName,
+                last_name = dto.LastName,
+                role = UserRole.User
             };
 
             if (AdminTelegramIds.Contains(dto.Id))
-                user.Role = UserRole.Admin;
+                user.role = UserRole.Admin;
 
             await _users.Create(user);
         }
         else
         {
-            if (AdminTelegramIds.Contains(dto.Id) && user.Role != UserRole.Admin)
+            if (AdminTelegramIds.Contains(dto.Id) && user.role != UserRole.Admin)
             {
-                user.Role = UserRole.Admin;
+                user.role = UserRole.Admin;
                 await _users.Update(user);
             }
         }
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.Role.ToString())
+            new Claim(ClaimTypes.NameIdentifier, user.id.ToString()),
+            new Claim(ClaimTypes.Role, user.role.ToString())
         };
 
         var identity = new ClaimsIdentity(claims, "TelegramCookies");
@@ -71,9 +71,9 @@ public class AuthController : ControllerBase
 
         return Ok(new
         {
-            user.Id,
-            user.Username,
-            Role = user.Role.ToString()
+            user.id,
+            Username = user.username,
+            Role = user.role.ToString()
         });
     }
 }

@@ -8,4 +8,6 @@ public interface IUserRepository
     Task Create(User user);
     Task Update(User user);
     Task<int> GetCountAsync();
+
+    Task<IEnumerable<User>> GetUsers();
 }

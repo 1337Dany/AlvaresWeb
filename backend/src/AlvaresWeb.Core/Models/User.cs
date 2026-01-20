@@ -2,14 +2,14 @@
 
 public class User
 {
-    public Guid Id { get; set; }
-    public long TelegramId { get; set; }
-    public string? Username { get; set; }
-    public string FirstName { get; set; } = null!;
-    public string? LastName { get; set; }
-    public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
+    public Guid id { get; set; }
+    public long telegram_id { get; set; }
+    public string? username { get; set; }
+    public string first_name { get; set; } = null!;
+    public string? last_name { get; set; }
+    public DateTime registered_at { get; set; } = DateTime.UtcNow;
     
-    public UserRole Role { get; set; } = UserRole.User;
+    public UserRole role { get; set; } = UserRole.User;
 
     // Navigation property
     public virtual ICollection<UserChat> UserChats { get; set; } = new List<UserChat>();

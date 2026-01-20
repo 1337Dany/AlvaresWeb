@@ -12,6 +12,7 @@ public static class InfrastructureServicesExtension
     {
         app.AddScoped<IUserRepository, UserRepository>();
         app.AddScoped<IChatRepository, ChatRepository>();
+        app.AddScoped<IMessageRepository, MessageRepository>();
         
         app.AddAuthentication("TelegramCookies")
             .AddCookie("TelegramCookies", options => 

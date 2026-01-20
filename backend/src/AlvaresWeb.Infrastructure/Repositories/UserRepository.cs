@@ -10,7 +10,7 @@ public class UserRepository(SqlContext context) : IUserRepository
     public async Task<User?> GetByTelegramId(long telegramId)
     {
         return await context.Users
-            .FirstOrDefaultAsync(u => u.TelegramId == telegramId);
+            .FirstOrDefaultAsync(u => u.telegram_id == telegramId);
     }
 
     public async Task Create(User user)
@@ -28,5 +28,10 @@ public class UserRepository(SqlContext context) : IUserRepository
     public async Task<int> GetCountAsync()
     {
         return await context.Users.CountAsync();
+    }
+
+    public async Task<IEnumerable<User>> GetUsers()
+    {
+        return await context.Users.ToListAsync();
     }
 }
