@@ -23,9 +23,15 @@ public class MessageService : IMessageService
         var messages = await _messageRepository.GetAllMessagesByChatId(chatId);
         return messages.Select(u => new ChatMessageDto()
         {
+            Id = u.Id,
             TelegramUserId = u.TelegramUserId,
             Text = u.Text,
             CreatedAt = u.CreatedAt,
         });
+    }
+
+    public async Task<bool> DeleteMessageAsync(string chatId, string messageId)
+    {
+        return await _messageRepository.DeleteMessageAsync(chatId, messageId);
     }
 }

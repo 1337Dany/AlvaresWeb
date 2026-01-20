@@ -6,7 +6,7 @@ namespace AlvarewWeb.API.Controllers;
 
 [ApiController]
 [Route("api/chats")]
-public class ChatController
+public class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
 

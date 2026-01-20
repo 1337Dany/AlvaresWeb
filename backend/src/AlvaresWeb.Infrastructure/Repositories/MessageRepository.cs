@@ -28,4 +28,14 @@ public class MessageRepository(NoSqlDriver context) : IMessageRepository
             .SortByDescending(m => m.CreatedAt)
             .ToListAsync();
     }
+
+    public async Task<bool> DeleteMessageAsync(string chatId, string messageId)
+    {
+        var filter = Builders<MongoMessage>.Filter.And(
+            Builders<MongoMessage>.Filter.Eq(m => m.TelegramChatId, chatId),
+            Builders<MongoMessage>.Filter.Eq(m => m.Id, messageId)
+        );
+        var result = await context.Messages.DeleteOneAsync(filter);
+        return result.DeletedCount > 0;
+    }
 }
