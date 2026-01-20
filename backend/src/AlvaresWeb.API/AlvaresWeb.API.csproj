@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>AlvarewWeb.API</RootNamespace>
       <UserSecretsId>89b4bd4f-c859-4892-bf58-4f9b101629a5</UserSecretsId>
+      <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
     <ItemGroup>
