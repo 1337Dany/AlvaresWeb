@@ -16,7 +16,7 @@ public class ChatController
     }
 
     [HttpGet]
-    public async Task<IEnumerable<ChatDto>> GetAllMessages()
+    public async Task<IEnumerable<ChatDto>> GetAllChats()
     {
         return await _chatService.GetAllChatsAsync();
     }
