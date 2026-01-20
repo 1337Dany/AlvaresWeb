@@ -7,8 +7,8 @@ namespace AlvaresWeb.Infrastructure.Persistence;
 public partial class SqlContext(IConfiguration configuration, DbContextOptions<SqlContext> options)
     : DbContext(options)
 {
-    private readonly string _connectionString = configuration.GetConnectionString("DefaultConnection") 
-        ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'DefaultConnection' not found.");
+    private readonly string _connectionString = configuration.GetConnectionString("PostgresConnection") 
+        ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'PostgresConnection' not found.");
 
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<Chat> Chats { get; set; }
@@ -25,16 +25,16 @@ public partial class SqlContext(IConfiguration configuration, DbContextOptions<S
     {
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("user_pk");
+            entity.HasKey(e => e.id).HasName("user_pk");
             entity.ToTable("users");
 
-            entity.HasIndex(e => e.TelegramId).IsUnique();
+            entity.HasIndex(e => e.telegram_id).IsUnique();
 
-            entity.Property(e => e.TelegramId).IsRequired();
-            entity.Property(e => e.FirstName).HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Username).HasMaxLength(255);
-            entity.Property(u => u.Role).HasConversion<string>();
-            entity.Property(e => e.RegisteredAt).HasDefaultValueSql("NOW()");
+            entity.Property(e => e.telegram_id).IsRequired();
+            entity.Property(e => e.first_name).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.username).HasMaxLength(255);
+            entity.Property(u => u.role).HasConversion<string>();
+            entity.Property(e => e.registered_at).HasDefaultValueSql("NOW()");
         });
 
         modelBuilder.Entity<Chat>(entity =>
