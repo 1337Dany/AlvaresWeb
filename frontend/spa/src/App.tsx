@@ -1,293 +1,234 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    Settings,
-    User,
-    HelpCircle,
-    MessageSquare,
-    ChevronLeft,
-    ChevronRight,
-    ArrowLeft,
-    Search,
-    Eye,
-    Edit,
-    Trash2,
-    X
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 
 type ViewType = 'welcome' | 'chatList' | 'chatMessages';
 
 interface Chat {
-    chatId: string;
-    chatName: string;
-    lastMessage: string;
-    messageCount: number;
+  id: string;
+  title: string;
 }
 
-interface ChatMessage {
-    chatId: string;
-    message: string;
-    timestamp: string;
+interface ChatListResponse {
+  items: Chat[];
+  totalCount: number;
 }
 
 interface TelegramUser {
-    id: number;
-    first_name: string;
-    last_name?: string;
-    username?: string;
-    photo_url?: string;
-    auth_date: number;
-    hash: string;
+  id: number;
+  first_name: string;
+  username?: string;
+  auth_date: number;
+  hash: string;
 }
 
 const ITEMS_PER_PAGE = 5;
 
-/* ---------- MOCK MESSAGES ---------- */
-const generateMockMessages = (chatId: string): ChatMessage[] => {
-    return Array.from({ length: 23 }, (_, i) => ({
-        chatId,
-        message: `Mock message #${i + 1} from ${chatId}`,
-        timestamp: new Date(Date.now() - i * 60000).toLocaleString()
-    }));
-};
+declare global {
+  interface Window {
+    onTelegramAuth: (user: TelegramUser) => void;
+  }
+}
 
-/* ---------- APP ---------- */
 export default function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
 
-    const [currentView, setCurrentView] = useState<ViewType>('welcome');
-    const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<ViewType>('welcome');
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
-    const [chats, setChats] = useState<Chat[]>([]);
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [totalChats, setTotalChats] = useState(0);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [chatListPage, setChatListPage] = useState(1);
-    const [messagesPage, setMessagesPage] = useState(1);
+  // Telegram auth
+  useEffect(() => {
+    const storedUser = localStorage.getItem('telegramUser');
+    if (storedUser) {
+      setTelegramUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
+    }
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    window.onTelegramAuth = (user: TelegramUser) => {
+      setTelegramUser(user);
+      setIsAuthenticated(true);
+      localStorage.setItem('telegramUser', JSON.stringify(user));
+    };
 
-    const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+    if (!isAuthenticated) {
+      const script = document.createElement('script');
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.setAttribute('data-telegram-login', 'find_context_bot');
+      script.setAttribute('data-size', 'large');
+      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+      script.async = true;
 
-    /* ---------- AUTH MOCK ---------- */
-    useEffect(() => {
-        const stored = localStorage.getItem('telegramUser');
-        if (stored) {
-            setTelegramUser(JSON.parse(stored));
-            setIsAuthenticated(true);
-        }
-    }, []);
+      document.getElementById('telegram-login-container')?.appendChild(script);
+    }
+  }, [isAuthenticated]);
 
-    /* ---------- LOAD CHATS FROM BACKEND ---------- */
-    const loadChats = async (userId: number) => {
+  // Load chats with server-side pagination
+  useEffect(() => {
+    if (!isAuthenticated || currentView !== 'chatList') return;
+
+    const fetchChats = async () => {
+      try {
         setIsLoading(true);
         setError(null);
 
-        try {
-            const res = await fetch(`/api/chats?userId=${userId}`);
-            if (!res.ok) throw new Error('Failed to load chats');
-            const data: Chat[] = await res.json();
-            setChats(data);
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /* ---------- CHAT SELECT ---------- */
-    const handleChatSelect = (chatId: string) => {
-        setSelectedChatId(chatId);
-        setCurrentView('chatMessages');
-        setMessagesPage(1);
-        setSearchQuery('');
-        setMessages(generateMockMessages(chatId));
-    };
-
-    /* ---------- PAGINATION ---------- */
-    const chatTotalPages = Math.ceil(chats.length / ITEMS_PER_PAGE);
-    const chatStart = (chatListPage - 1) * ITEMS_PER_PAGE;
-    const chatEnd = chatStart + ITEMS_PER_PAGE;
-    const currentChats = chats.slice(chatStart, chatEnd);
-
-    const filteredMessages = messages.filter(m =>
-        m.message.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const messagesTotalPages = Math.ceil(filteredMessages.length / ITEMS_PER_PAGE);
-    const msgStart = (messagesPage - 1) * ITEMS_PER_PAGE;
-    const msgEnd = msgStart + ITEMS_PER_PAGE;
-    const currentMessages = filteredMessages.slice(msgStart, msgEnd);
-
-    /* ---------- LOGIN SCREEN ---------- */
-    if (!isAuthenticated) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <button
-                    onClick={() => {
-                        const mockUser: TelegramUser = {
-                            id: 1,
-                            first_name: 'Test',
-                            auth_date: Date.now(),
-                            hash: 'mock'
-                        };
-                        localStorage.setItem('telegramUser', JSON.stringify(mockUser));
-                        setTelegramUser(mockUser);
-                        setIsAuthenticated(true);
-                    }}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg"
-                >
-                    Mock Login
-                </button>
-            </div>
+        const res = await fetch(
+            `/api/chats?page=${page}&pageSize=${ITEMS_PER_PAGE}`
         );
-    }
 
-    /* ---------- UI ---------- */
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data: ChatListResponse = await res.json();
+        setChats(data.items);
+        setTotalChats(data.totalCount);
+      } catch (e) {
+        console.error(e);
+        setError('Failed to load chats');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchChats();
+  }, [isAuthenticated, currentView, page]);
+
+  const totalPages = Math.ceil(totalChats / ITEMS_PER_PAGE);
+
+  const handleChatSelect = (chatId: string) => {
+    setSelectedChatId(chatId);
+    setCurrentView('chatMessages');
+  };
+
+  const handleBack = () => {
+    setCurrentView('chatList');
+    setSelectedChatId(null);
+  };
+
+  if (!isAuthenticated) {
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="h-16 bg-white border-b flex items-center px-6">
-                <button
-                    onClick={() => {
-                        setCurrentView('chatList');
-                        telegramUser && loadChats(telegramUser.id);
-                    }}
-                    className="flex items-center gap-2"
-                >
-                    <MessageSquare />
-                    Chat List
-                </button>
-            </header>
-
-            <main className="p-6">
-                {currentView === 'welcome' && (
-                    <p>Click Chat List to load chats</p>
-                )}
-
-                {currentView === 'chatList' && (
-                    <>
-                        {isLoading && <p>Loading...</p>}
-                        {error && <p className="text-red-600">{error}</p>}
-
-                        <table className="w-full">
-                            <thead>
-                            <tr>
-                                <th>Chat ID</th>
-                                <th>Name</th>
-                                <th>Last Message</th>
-                                <th>Count</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {currentChats.map(chat => (
-                                <tr
-                                    key={chat.chatId}
-                                    onClick={() => handleChatSelect(chat.chatId)}
-                                    className="cursor-pointer hover:bg-gray-100"
-                                >
-                                    <td>{chat.chatId}</td>
-                                    <td>{chat.chatName}</td>
-                                    <td>{chat.lastMessage}</td>
-                                    <td>{chat.messageCount}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-
-                        {chats.length > 0 && (
-                            <div className="flex gap-2 mt-4">
-                                <button
-                                    disabled={chatListPage === 1}
-                                    onClick={() => setChatListPage(p => p - 1)}
-                                >
-                                    <ChevronLeft />
-                                </button>
-
-                                <span>{chatListPage} / {chatTotalPages}</span>
-
-                                <button
-                                    disabled={chatListPage === chatTotalPages}
-                                    onClick={() => setChatListPage(p => p + 1)}
-                                >
-                                    <ChevronRight />
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {currentView === 'chatMessages' && selectedChatId && (
-                    <>
-                        <button
-                            onClick={() => setCurrentView('chatList')}
-                            className="mb-4 flex items-center gap-2"
-                        >
-                            <ArrowLeft /> Back
-                        </button>
-
-                        <input
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Search messages"
-                            className="border px-3 py-2 mb-4 w-full"
-                        />
-
-                        <table className="w-full">
-                            <thead>
-                            <tr>
-                                <th>Message</th>
-                                <th>Time</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {currentMessages.map((m, i) => (
-                                <tr
-                                    key={i}
-                                    onClick={() => setSelectedMessage(m)}
-                                    className="cursor-pointer hover:bg-gray-100"
-                                >
-                                    <td>{m.message}</td>
-                                    <td>{m.timestamp}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-
-                        <div className="flex gap-2 mt-4">
-                            <button
-                                disabled={messagesPage === 1}
-                                onClick={() => setMessagesPage(p => p - 1)}
-                            >
-                                <ChevronLeft />
-                            </button>
-
-                            <span>{messagesPage} / {messagesTotalPages}</span>
-
-                            <button
-                                disabled={messagesPage === messagesTotalPages}
-                                onClick={() => setMessagesPage(p => p + 1)}
-                            >
-                                <ChevronRight />
-                            </button>
-                        </div>
-                    </>
-                )}
-            </main>
-
-            {selectedMessage && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-lg w-96">
-                        <p>{selectedMessage.message}</p>
-                        <button
-                            onClick={() => setSelectedMessage(null)}
-                            className="mt-4 px-4 py-2 bg-gray-200 rounded"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+          <div className="bg-white p-8 rounded-xl shadow-md">
+            <h1 className="text-2xl font-bold mb-4 text-center">
+              Telegram Bot Dashboard
+            </h1>
+            <div id="telegram-login-container" />
+          </div>
         </div>
     );
+  }
+
+  return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="h-16 bg-white border-b flex items-center px-6">
+          <button
+              onClick={() => {
+                setCurrentView('chatList');
+                setPage(1);
+              }}
+              className="flex items-center gap-2"
+          >
+            <MessageSquare className="w-5 h-5" />
+            Chats
+          </button>
+        </header>
+
+        <main className="p-6 max-w-5xl mx-auto">
+          {currentView === 'welcome' && (
+              <p className="text-gray-600">
+                Select chat list to begin
+              </p>
+          )}
+
+          {currentView === 'chatList' && (
+              <>
+                {isLoading && <p>Loading…</p>}
+                {error && <p className="text-red-600">{error}</p>}
+
+                {!isLoading && !error && (
+                    <>
+                      <table className="w-full border">
+                        <thead>
+                        <tr className="border-b">
+                          <th className="p-2 text-left">Chat ID</th>
+                          <th className="p-2 text-left">Title</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {chats.map(chat => (
+                            <tr
+                                key={chat.id}
+                                onClick={() => handleChatSelect(chat.id)}
+                                className="cursor-pointer hover:bg-gray-100"
+                            >
+                              <td className="p-2 font-mono">{chat.id}</td>
+                              <td className="p-2">{chat.title}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                      </table>
+
+                      {/* Pagination */}
+                      <div className="flex items-center justify-between mt-4">
+                  <span className="text-sm text-gray-600">
+                    Page {page} of {totalPages}
+                  </span>
+
+                        <div className="flex gap-2">
+                          <button
+                              disabled={page === 1}
+                              onClick={() => setPage(p => p - 1)}
+                              className="px-3 py-1 border rounded disabled:opacity-50"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+
+                          <button
+                              disabled={page === totalPages}
+                              onClick={() => setPage(p => p + 1)}
+                              className="px-3 py-1 border rounded disabled:opacity-50"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                )}
+              </>
+          )}
+
+          {currentView === 'chatMessages' && selectedChatId && (
+              <>
+                <button
+                    onClick={handleBack}
+                    className="mb-4 flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </button>
+
+                <p className="text-gray-700">
+                  Messages for chat{' '}
+                  <span className="font-mono">{selectedChatId}</span>
+                </p>
+
+                <p className="text-sm text-gray-400 mt-4">
+                  Messages endpoint not implemented yet
+                </p>
+              </>
+          )}
+        </main>
+      </div>
+  );
 }
