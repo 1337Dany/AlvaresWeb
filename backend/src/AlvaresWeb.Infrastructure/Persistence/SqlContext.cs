@@ -39,11 +39,11 @@ public partial class SqlContext(IConfiguration configuration, DbContextOptions<S
 
         modelBuilder.Entity<Chat>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("chat_pk");
+            entity.HasKey(e => e.id).HasName("chat_pk");
             entity.ToTable("chats");
 
-            entity.HasIndex(e => e.TelegramChatId).IsUnique();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
+            entity.HasIndex(e => e.telegram_chat_id).IsUnique();
+            entity.Property(e => e.created_at).HasDefaultValueSql("NOW()");
         });
 
         modelBuilder.Entity<UserChat>(entity =>

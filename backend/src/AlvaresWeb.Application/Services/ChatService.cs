@@ -19,8 +19,8 @@ public class ChatService : IChatService
         var chats = await _chatRepository.GetAllChatsAsync();
         return chats.Select(u => new ChatDto()
         {
-            Id = u.Id,
-            Title = u.Title,
+            Id = u.id,
+            Title = u.title,
         });
     }
 }
