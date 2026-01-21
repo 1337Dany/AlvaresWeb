@@ -21,6 +21,9 @@ public class MessageService : IMessageService
 
     public async Task<IEnumerable<ChatMessageDto>> GetAllMessagesByChatId(string chatId)
     {
+        if (string.IsNullOrWhiteSpace(chatId))
+            throw new ArgumentException("Chat ID cannot be empty", nameof(chatId));
+
         var messages = await _messageRepository.GetAllMessagesByChatId(chatId);
         return messages.Select(u => new ChatMessageDto()
         {
@@ -38,6 +41,11 @@ public class MessageService : IMessageService
 
     public async Task<bool> UpdateMessageAsync(string chatId, string messageId, string newText)
     {
+        if (string.IsNullOrWhiteSpace(chatId) || string.IsNullOrWhiteSpace(messageId))
+            return false;
+        
+        if (string.IsNullOrWhiteSpace(newText) || newText.Length > 4096)
+            return false;
         return await _messageRepository.UpdateMessageAsync(chatId, messageId, newText);
     }
 
