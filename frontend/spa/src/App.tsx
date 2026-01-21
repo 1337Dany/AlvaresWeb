@@ -125,6 +125,8 @@ export default function App() {
     const [newMessageText, setNewMessageText] = useState('');
     const [isSending, setIsSending] = useState(false);
 
+    const [error, setError] = useState<string | null>(null);
+
     // Initialize Telegram Login Widget
     useEffect(() => {
         // Check if user is already logged in (from localStorage)
@@ -306,6 +308,13 @@ export default function App() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Chat list validation logic
+    const validateMessage = (text: string) => {
+        if (text.length > 4096) return "Message is too long (max 4096 chars)";
+        if (text.trim().length === 0) return "Message cannot be empty";
+        return null;
     };
 
     // Messages from chat logic
@@ -496,10 +505,17 @@ export default function App() {
                                     <label className="text-sm font-medium text-gray-600">Edit Message</label>
                                     <textarea
                                         value={editText}
-                                        onChange={(e) => setEditText(e.target.value)}
+                                        onChange={(e) => {
+                                            setEditText(e.target.value);
+                                            setError(validateMessage(e.target.value));
+                                        }}
                                         className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                                         rows={3}
                                     />
+                                    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+                                    <div className="text-xs text-gray-400 text-right">
+                                        {editText.length} / 4096
+                                    </div>
                                 </div>
                             </div>
 

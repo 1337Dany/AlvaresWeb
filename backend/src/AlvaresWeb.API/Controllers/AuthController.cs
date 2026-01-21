@@ -14,12 +14,6 @@ public class AuthController : ControllerBase
 {
     private readonly IUserRepository _users;
 
-    private static readonly long[] AdminTelegramIds =
-    {
-        123456789,
-        987654321
-    };
-
     public AuthController(IUserRepository users)
     {
         _users = users;
@@ -44,18 +38,7 @@ public class AuthController : ControllerBase
                 role = UserRole.User
             };
 
-            if (AdminTelegramIds.Contains(dto.Id))
-                user.role = UserRole.Admin;
-
             await _users.Create(user);
-        }
-        else
-        {
-            if (AdminTelegramIds.Contains(dto.Id) && user.role != UserRole.Admin)
-            {
-                user.role = UserRole.Admin;
-                await _users.Update(user);
-            }
         }
 
         var claims = new List<Claim>
