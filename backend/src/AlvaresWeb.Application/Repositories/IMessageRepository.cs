@@ -9,4 +9,5 @@ public interface IMessageRepository
     Task<IEnumerable<MongoMessage>> GetAllMessagesByChatId(string chatId);
     Task<bool> DeleteMessageAsync(string chatId, string messageId);
     Task<bool> UpdateMessageAsync(string chatId, string messageId, string newText);
+    Task CreateMessageAsync(MongoMessage message);
 }

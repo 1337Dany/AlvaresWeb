@@ -51,4 +51,8 @@ public class MessageRepository(NoSqlDriver context) : IMessageRepository
         var result = await context.Messages.UpdateOneAsync(filter, update);
         return result.ModifiedCount > 0;
     }
+    public async Task CreateMessageAsync(MongoMessage message)
+    {
+        await context.Messages.InsertOneAsync(message);
+    }
 }

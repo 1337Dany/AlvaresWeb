@@ -122,6 +122,9 @@ export default function App() {
 
     const [editText, setEditText] = useState('');
 
+    const [newMessageText, setNewMessageText] = useState('');
+    const [isSending, setIsSending] = useState(false);
+
     // Initialize Telegram Login Widget
     useEffect(() => {
         // Check if user is already logged in (from localStorage)
@@ -196,7 +199,7 @@ export default function App() {
             try {
                 const response = await fetch(
                     `/api/Message/chats/${selectedMessage.chatId}/messages/${selectedMessage.id}`,
-                    { method: 'DELETE' }
+                    {method: 'DELETE'}
                 );
 
                 if (response.ok) {
@@ -219,14 +222,14 @@ export default function App() {
                 `/api/Message/chats/${selectedMessage.chatId}/messages/${selectedMessage.id}`,
                 {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(editText)
                 }
             );
 
             if (response.ok) {
                 setAllMessages(prev => prev.map(m =>
-                    m.id === selectedMessage.id ? { ...m, message: editText } : m
+                    m.id === selectedMessage.id ? {...m, message: editText} : m
                 ));
                 setSelectedMessage(null);
                 alert("Message updated successfully!");
@@ -244,6 +247,42 @@ export default function App() {
 
     const handleSearch = () => {
         setMessagesPage(1);
+    };
+
+    const handleSendMessage = async () => {
+        if (!newMessageText.trim() || !selectedChatId || !telegramUser) return;
+
+        setIsSending(true);
+        try {
+            const response = await fetch('/api/Message', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    chatId: selectedChatId,
+                    telegramUserId: String(telegramUser.id), // ID из виджета логина
+                    text: newMessageText,
+                })
+            });
+
+            if (response.ok) {
+                const savedMessage = await response.json();
+
+                // Добавляем новое сообщение в начало или конец списка
+                const newMsgFormatted: ChatMessage = {
+                    id: savedMessage.id,
+                    chatId: selectedChatId,
+                    message: savedMessage.text,
+                    timestamp: new Date(savedMessage.createdAt).toLocaleString()
+                };
+
+                setAllMessages(prev => [newMsgFormatted, ...prev]);
+                setNewMessageText(''); // Очищаем поле
+            }
+        } catch (error) {
+            console.error("Send error:", error);
+        } finally {
+            setIsSending(false);
+        }
     };
 
     // Chat List Logic
@@ -678,6 +717,30 @@ export default function App() {
                                             >
                                                 <span className="text-sm font-medium">Next</span>
                                                 <ChevronRight className="w-4 h-4"/>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Message send block */}
+                                    <div className="pt-4 border-t border-gray-200 mb-6">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Send message as <span
+                                            className="text-blue-600">@{telegramUser?.username}</span>
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <textarea
+                                                value={newMessageText}
+                                                onChange={(e) => setNewMessageText(e.target.value)}
+                                                placeholder="Type your message..."
+                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                rows={2}
+                                            />
+                                            <button
+                                                onClick={handleSendMessage}
+                                                disabled={isSending || !newMessageText.trim()}
+                                                className="flex items-center justify-center px-6 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                            >
+                                                {isSending ? 'Sending...' : 'Send'}
                                             </button>
                                         </div>
                                     </div>

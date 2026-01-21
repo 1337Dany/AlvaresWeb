@@ -1,4 +1,5 @@
 ﻿using AlvaresWeb.Application.DTOs;
+using AlvaresWeb.Core.Models;
 
 namespace AlvaresWeb.Application.Services.Interfaces;
 
@@ -8,4 +9,5 @@ public interface IMessageService
     Task<IEnumerable<ChatMessageDto>> GetAllMessagesByChatId(string chatId);
     Task<bool> DeleteMessageAsync(string chatId, string messageId);
     Task<bool> UpdateMessageAsync(string chatId, string messageId, string newText);
+    Task CreateMessageAsync(MongoMessage newMessage);
 }

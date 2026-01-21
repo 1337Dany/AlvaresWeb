@@ -1,6 +1,7 @@
 ﻿using AlvaresWeb.Application.DTOs;
 using AlvaresWeb.Application.Repositories;
 using AlvaresWeb.Application.Services.Interfaces;
+using AlvaresWeb.Core.Models;
 
 namespace AlvaresWeb.Application.Services;
 
@@ -23,7 +24,7 @@ public class MessageService : IMessageService
         var messages = await _messageRepository.GetAllMessagesByChatId(chatId);
         return messages.Select(u => new ChatMessageDto()
         {
-            Id = u.Id,
+            ChatId = u.Id,
             TelegramUserId = u.TelegramUserId,
             Text = u.Text,
             CreatedAt = u.CreatedAt,
@@ -38,5 +39,10 @@ public class MessageService : IMessageService
     public async Task<bool> UpdateMessageAsync(string chatId, string messageId, string newText)
     {
         return await _messageRepository.UpdateMessageAsync(chatId, messageId, newText);
+    }
+
+    public Task CreateMessageAsync(MongoMessage newMessage)
+    {
+        return _messageRepository.CreateMessageAsync(newMessage);
     }
 }
