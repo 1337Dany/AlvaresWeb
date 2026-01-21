@@ -38,4 +38,17 @@ public class MessageRepository(NoSqlDriver context) : IMessageRepository
         var result = await context.Messages.DeleteOneAsync(filter);
         return result.DeletedCount > 0;
     }
+
+    public async Task<bool> UpdateMessageAsync(string chatId, string messageId, string newText)
+    {
+        var filter = Builders<MongoMessage>.Filter.And(
+            Builders<MongoMessage>.Filter.Eq(m => m.TelegramChatId, chatId),
+            Builders<MongoMessage>.Filter.Eq(m => m.Id, messageId)
+        );
+
+        var update = Builders<MongoMessage>.Update.Set(m => m.Text, newText);
+
+        var result = await context.Messages.UpdateOneAsync(filter, update);
+        return result.ModifiedCount > 0;
+    }
 }

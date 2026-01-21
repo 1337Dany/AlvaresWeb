@@ -120,6 +120,8 @@ export default function App() {
     const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
     const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
+    const [editText, setEditText] = useState('');
+
     // Initialize Telegram Login Widget
     useEffect(() => {
         // Check if user is already logged in (from localStorage)
@@ -154,6 +156,13 @@ export default function App() {
             }
         }
     }, [isAuthenticated]);
+
+    // Storing effect of editing
+    useEffect(() => {
+        if (selectedMessage) {
+            setEditText(selectedMessage.message);
+        }
+    }, [selectedMessage]);
 
     const handleLogout = () => {
         setIsAuthenticated(false);
@@ -202,8 +211,31 @@ export default function App() {
         }
     };
 
-    const handleEdit = () => {
-        alert(`Edit message: ${selectedMessage?.message}`);
+    const handleEdit = async () => {
+        if (!selectedMessage || !editText.trim()) return;
+
+        try {
+            const response = await fetch(
+                `/api/Message/chats/${selectedMessage.chatId}/messages/${selectedMessage.id}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editText)
+                }
+            );
+
+            if (response.ok) {
+                setAllMessages(prev => prev.map(m =>
+                    m.id === selectedMessage.id ? { ...m, message: editText } : m
+                ));
+                setSelectedMessage(null);
+                alert("Message updated successfully!");
+            } else {
+                alert("Failed to update message");
+            }
+        } catch (error) {
+            console.error("Update error:", error);
+        }
     };
 
     const handleView = () => {
@@ -421,7 +453,15 @@ export default function App() {
 
                             <div>
                                 <label className="text-sm font-medium text-gray-600">Message</label>
-                                <p className="text-gray-900">{selectedMessage.message}</p>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-600">Edit Message</label>
+                                    <textarea
+                                        value={editText}
+                                        onChange={(e) => setEditText(e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                        rows={3}
+                                    />
+                                </div>
                             </div>
 
                             <div>

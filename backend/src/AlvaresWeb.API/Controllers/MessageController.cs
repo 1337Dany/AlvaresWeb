@@ -33,4 +33,11 @@ public class MessageController : ControllerBase
         var deleted = await _messageService.DeleteMessageAsync(chatId, messageId);
         return deleted ? Ok() : BadRequest();
     }
+    
+    [HttpPut("chats/{chatId}/messages/{messageId}")]
+    public async Task<IActionResult> UpdateMessage(string chatId, string messageId, [FromBody] string newText)
+    {
+        var updated = await _messageService.UpdateMessageAsync(chatId, messageId, newText);
+        return updated ? Ok() : NotFound();
+    }
 }

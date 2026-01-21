@@ -34,4 +34,9 @@ public class MessageService : IMessageService
     {
         return await _messageRepository.DeleteMessageAsync(chatId, messageId);
     }
+
+    public async Task<bool> UpdateMessageAsync(string chatId, string messageId, string newText)
+    {
+        return await _messageRepository.UpdateMessageAsync(chatId, messageId, newText);
+    }
 }
