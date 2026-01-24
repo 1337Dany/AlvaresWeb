@@ -9,9 +9,9 @@ import {
     ArrowLeft,
     Search,
     Eye,
-    Edit,
     Trash2,
-    X
+    X,
+    Home
 } from 'lucide-react';
 
 type ViewType = 'welcome' | 'chatList' | 'chatMessages';
@@ -37,61 +37,6 @@ interface TelegramUser {
     auth_date: number;
     hash: string;
 }
-
-// // Mock data for chats
-// const generateMockChats = (): Chat[] => {
-//   const chats = [
-//     { name: 'John Doe', lastMessage: 'Thanks for the help!', count: 15 },
-//     { name: 'Jane Smith', lastMessage: 'When is the next update?', count: 8 },
-//     { name: 'Tech Support', lastMessage: 'Issue resolved', count: 23 },
-//     { name: 'Sales Team', lastMessage: 'New proposal sent', count: 12 },
-//     { name: 'Marketing Group', lastMessage: 'Campaign launched', count: 45 },
-//     { name: 'Developer Chat', lastMessage: 'Bug fixed', count: 67 },
-//     { name: 'Customer #1234', lastMessage: 'Product inquiry', count: 5 },
-//     { name: 'VIP Client', lastMessage: 'Meeting scheduled', count: 34 },
-//     { name: 'Beta Testers', lastMessage: 'Feedback submitted', count: 29 },
-//     { name: 'General Support', lastMessage: 'Question about pricing', count: 18 },
-//   ];
-//
-//   return chats.map((chat, idx) => ({
-//     chatId: `chat_${100000 + idx}`,
-//     chatName: chat.name,
-//     lastMessage: chat.lastMessage,
-//     messageCount: chat.count,
-//   }));
-// };
-
-// Mock data for messages
-// const generateMockMessages = (chatId: string): ChatMessage[] => {
-//     const messages = [
-//         "Hello, how can I help you?",
-//         "I need information about your services",
-//         "What are your business hours?",
-//         "Thank you for the quick response!",
-//         "Can you provide pricing details?",
-//         "Is there a mobile app available?",
-//         "How do I reset my password?",
-//         "Great service, very satisfied!",
-//         "I have a question about billing",
-//         "When will the new features be released?",
-//         "I'm having trouble logging in",
-//         "Can I schedule a demo?",
-//         "What payment methods do you accept?",
-//         "How do I cancel my subscription?",
-//         "The bot is very helpful, thanks!",
-//         "I need technical support",
-//         "Are there any discounts available?",
-//         "How do I update my profile?",
-//         "What's the refund policy?",
-//         "Can I integrate this with other tools?",
-//     ];
-//
-//     return messages.map((msg, idx) => ({
-//         chatId: chatId,
-//         message: msg,
-//         timestamp: new Date(Date.now() - idx * 3600000).toLocaleString(),
-//     }));
-// };
 
 const ITEMS_PER_PAGE = 5;
 
@@ -236,14 +181,12 @@ export default function App() {
         }
     };
 
-    //const allChats = generateMockChats();
     const chatTotalPages = Math.ceil(allChats.length / ITEMS_PER_PAGE);
     const chatStartIndex = (chatListPage - 1) * ITEMS_PER_PAGE;
     const chatEndIndex = chatStartIndex + ITEMS_PER_PAGE;
     const currentChats = allChats.slice(chatStartIndex, chatEndIndex);
 
     // Messages Logic
-    //const allMessages = selectedChatId ? generateMockMessages(selectedChatId) : [];
     const filteredMessages = allMessages.filter(msg =>
         msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
         msg.chatId.toLowerCase().includes(searchQuery.toLowerCase())
@@ -394,6 +337,11 @@ export default function App() {
                             </div>
 
                             <div>
+                                <label className="text-sm font-medium text-gray-600">Message</label>
+                                <p className="text-gray-900">{selectedMessage.message}</p>
+                            </div>
+
+                            <div>
                                 <label className="text-sm font-medium text-gray-600">Timestamp</label>
                                 <p className="text-gray-900">{selectedMessage.timestamp}</p>
                             </div>
@@ -430,12 +378,53 @@ export default function App() {
                             {currentView === 'welcome' && (
                                 <div className="flex flex-col items-center justify-center py-12">
                                     <p className="text-gray-600 mb-6">Click "Chat List" to view all your chats</p>
+
+                                    {/* Search on Main Screen */}
+                                    <div className="w-full max-w-2xl">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Search Chats</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        setCurrentView('chatList');
+                                                        fetchChats();
+                                                    }
+                                                }}
+                                                placeholder="Search chats..."
+                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    setCurrentView('chatList');
+                                                    fetchChats();
+                                                }}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                            >
+                                                <Search className="w-4 h-4"/>
+                                                <span>Search</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Chat List View */}
                             {currentView === 'chatList' && (
                                 <div className="space-y-4">
+                                    {/* Home Button */}
+                                    <div className="mb-4">
+                                        <button
+                                            onClick={() => setCurrentView('welcome')}
+                                            className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                        >
+                                            <Home className="w-4 h-4" />
+                                            <span className="text-sm font-medium">Back to Home</span>
+                                        </button>
+                                    </div>
+
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
                                             <thead>
@@ -518,6 +507,13 @@ export default function App() {
                                         >
                                             <ArrowLeft className="w-4 h-4"/>
                                             <span className="text-sm font-medium">Back to Chat List</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentView('welcome')}
+                                            className="flex items-center gap-2 px-3 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                        >
+                                            <Home className="w-4 h-4" />
+                                            <span className="text-sm font-medium">Home</span>
                                         </button>
                                         <div className="text-sm text-gray-600">
                                             Viewing messages from: <span
