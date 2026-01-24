@@ -33,24 +33,4 @@ public class MessageService : IMessageService
             CreatedAt = u.CreatedAt,
         });
     }
-
-    public async Task<bool> DeleteMessageAsync(string chatId, string messageId)
-    {
-        return await _messageRepository.DeleteMessageAsync(chatId, messageId);
-    }
-
-    public async Task<bool> UpdateMessageAsync(string chatId, string messageId, string newText)
-    {
-        if (string.IsNullOrWhiteSpace(chatId) || string.IsNullOrWhiteSpace(messageId))
-            return false;
-        
-        if (string.IsNullOrWhiteSpace(newText) || newText.Length > 4096)
-            return false;
-        return await _messageRepository.UpdateMessageAsync(chatId, messageId, newText);
-    }
-
-    public Task CreateMessageAsync(MongoMessage newMessage)
-    {
-        return _messageRepository.CreateMessageAsync(newMessage);
-    }
 }

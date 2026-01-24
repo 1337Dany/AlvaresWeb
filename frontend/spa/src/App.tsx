@@ -120,13 +120,6 @@ export default function App() {
     const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
     const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
-    const [editText, setEditText] = useState('');
-
-    const [newMessageText, setNewMessageText] = useState('');
-    const [isSending, setIsSending] = useState(false);
-
-    const [error, setError] = useState<string | null>(null);
-
     // Initialize Telegram Login Widget
     useEffect(() => {
         // Check if user is already logged in (from localStorage)
@@ -162,13 +155,6 @@ export default function App() {
         }
     }, [isAuthenticated]);
 
-    // Storing effect of editing
-    useEffect(() => {
-        if (selectedMessage) {
-            setEditText(selectedMessage.message);
-        }
-    }, [selectedMessage]);
-
     const handleLogout = () => {
         setIsAuthenticated(false);
         setTelegramUser(null);
@@ -194,97 +180,12 @@ export default function App() {
         setSelectedMessage(item);
     };
 
-    const handleDelete = async () => {
-        if (!selectedMessage) return;
-
-        if (window.confirm("Are you sure you want to delete this message?")) {
-            try {
-                const response = await fetch(
-                    `/api/Message/chats/${selectedMessage.chatId}/messages/${selectedMessage.id}`,
-                    {method: 'DELETE'}
-                );
-
-                if (response.ok) {
-                    setAllMessages(prev => prev.filter(m => m.id !== selectedMessage.id));
-                    setSelectedMessage(null);
-                } else {
-                    alert("Failed to delete message");
-                }
-            } catch (error) {
-                console.error("Delete error:", error);
-            }
-        }
-    };
-
-    const handleEdit = async () => {
-        if (!selectedMessage || !editText.trim()) return;
-
-        try {
-            const response = await fetch(
-                `/api/Message/chats/${selectedMessage.chatId}/messages/${selectedMessage.id}`,
-                {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(editText)
-                }
-            );
-
-            if (response.ok) {
-                setAllMessages(prev => prev.map(m =>
-                    m.id === selectedMessage.id ? {...m, message: editText} : m
-                ));
-                setSelectedMessage(null);
-                alert("Message updated successfully!");
-            } else {
-                alert("Failed to update message");
-            }
-        } catch (error) {
-            console.error("Update error:", error);
-        }
-    };
-
     const handleView = () => {
         alert(`View details for message: ${selectedMessage?.message}`);
     };
 
     const handleSearch = () => {
         setMessagesPage(1);
-    };
-
-    const handleSendMessage = async () => {
-        if (!newMessageText.trim() || !selectedChatId || !telegramUser) return;
-
-        setIsSending(true);
-        try {
-            const response = await fetch('/api/Message', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    chatId: selectedChatId,
-                    telegramUserId: String(telegramUser.id), // ID из виджета логина
-                    text: newMessageText,
-                })
-            });
-
-            if (response.ok) {
-                const savedMessage = await response.json();
-
-                // Добавляем новое сообщение в начало или конец списка
-                const newMsgFormatted: ChatMessage = {
-                    id: savedMessage.id,
-                    chatId: selectedChatId,
-                    message: savedMessage.text,
-                    timestamp: new Date(savedMessage.createdAt).toLocaleString()
-                };
-
-                setAllMessages(prev => [newMsgFormatted, ...prev]);
-                setNewMessageText(''); // Очищаем поле
-            }
-        } catch (error) {
-            console.error("Send error:", error);
-        } finally {
-            setIsSending(false);
-        }
     };
 
     // Chat List Logic
@@ -308,13 +209,6 @@ export default function App() {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    // Chat list validation logic
-    const validateMessage = (text: string) => {
-        if (text.length > 4096) return "Message is too long (max 4096 chars)";
-        if (text.trim().length === 0) return "Message cannot be empty";
-        return null;
     };
 
     // Messages from chat logic
@@ -500,26 +394,6 @@ export default function App() {
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-600">Message</label>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-600">Edit Message</label>
-                                    <textarea
-                                        value={editText}
-                                        onChange={(e) => {
-                                            setEditText(e.target.value);
-                                            setError(validateMessage(e.target.value));
-                                        }}
-                                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                                        rows={3}
-                                    />
-                                    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-                                    <div className="text-xs text-gray-400 text-right">
-                                        {editText.length} / 4096
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
                                 <label className="text-sm font-medium text-gray-600">Timestamp</label>
                                 <p className="text-gray-900">{selectedMessage.timestamp}</p>
                             </div>
@@ -532,22 +406,6 @@ export default function App() {
                             >
                                 <Eye className="w-4 h-4"/>
                                 <span>View</span>
-                            </button>
-
-                            <button
-                                onClick={handleEdit}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                                <Edit className="w-4 h-4"/>
-                                <span>Edit</span>
-                            </button>
-
-                            <button
-                                onClick={handleDelete}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                            >
-                                <Trash2 className="w-4 h-4"/>
-                                <span>Delete</span>
                             </button>
 
                             <button
@@ -733,30 +591,6 @@ export default function App() {
                                             >
                                                 <span className="text-sm font-medium">Next</span>
                                                 <ChevronRight className="w-4 h-4"/>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Message send block */}
-                                    <div className="pt-4 border-t border-gray-200 mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Send message as <span
-                                            className="text-blue-600">@{telegramUser?.username}</span>
-                                        </label>
-                                        <div className="flex gap-2">
-                                            <textarea
-                                                value={newMessageText}
-                                                onChange={(e) => setNewMessageText(e.target.value)}
-                                                placeholder="Type your message..."
-                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                                rows={2}
-                                            />
-                                            <button
-                                                onClick={handleSendMessage}
-                                                disabled={isSending || !newMessageText.trim()}
-                                                className="flex items-center justify-center px-6 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                                            >
-                                                {isSending ? 'Sending...' : 'Send'}
                                             </button>
                                         </div>
                                     </div>
