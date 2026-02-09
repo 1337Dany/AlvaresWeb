@@ -7,9 +7,6 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Postgres: Host=host.docker.internal;Port=5432;Database=alvares;Username=alvares;Password=supersecret
-      ConnectionStrings__Mongo: mongodb://host.docker.internal:27017
-
   frontend:
     build: ./frontend/spa
     container_name: alvaresweb_frontend
